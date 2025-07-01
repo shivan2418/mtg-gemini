@@ -12,7 +12,7 @@ Do the first incomplete task from the tasks section below.  When starting a new 
 
 ### tasks 
 - [x] Setup an app with a ts-react frontend and a ts-react backend. Add trpc.
-- [] Add prettier, post commit hooks using husky and eslint.
+- [x] Add prettier, post commit hooks using husky and eslint.
 - [] Setup basic database models. See models section below. 
 - [] Setup basic authtication logic using JWT. 
 - [] Create a sample login screen for testing the login business logic. Enable login with email and password.

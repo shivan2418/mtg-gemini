@@ -1,5 +1,6 @@
 import { FlatCompat } from "@eslint/eslintrc";
 import tseslint from 'typescript-eslint';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
@@ -17,9 +18,10 @@ export default tseslint.config(
 			...tseslint.configs.recommendedTypeChecked,
 			...tseslint.configs.stylisticTypeChecked
 		],
-      rules: {
-    "@typescript-eslint/array-type": "off",
-    "@typescript-eslint/consistent-type-definitions": "off",
+		    rules: {
+		  "prettier/prettier": "error",
+		  "@typescript-eslint/array-type": "off",
+		  "@typescript-eslint/consistent-type-definitions": "off",
     "@typescript-eslint/consistent-type-imports": [
       "warn",
       { prefer: "type-imports", fixStyle: "inline-type-imports" },
@@ -41,5 +43,6 @@ export default tseslint.config(
 				projectService: true
 			}
 		}
-	}
+	},
+	 eslintConfigPrettier
 )
