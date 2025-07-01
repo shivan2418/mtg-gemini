@@ -9,7 +9,9 @@
       "env": {
         "DEFAULT_MINIMUM_TOKENS": ""
       },
-      "alwaysAllow": []
+      "alwaysAllow": [
+        "resolve-library-id"
+      ]
     }
-  } 
+  }
 }

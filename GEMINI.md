@@ -13,10 +13,7 @@ Do the first incomplete task from the tasks section below.  When starting a new 
 ### tasks 
 - [x] Setup an app with a ts-react frontend and a ts-react backend. Add trpc.
 - [x] Add prettier, post commit hooks using husky and eslint.
-- [] Setup basic database models. See models section below. 
-- [] Setup basic authtication logic using JWT. 
 - [] Create a sample login screen for testing the login business logic. Enable login with email and password.
-- [] Add tailwind v4 to the project and update the existing components to use tailwind.
 - [] Replace the default / page with a custom page that just says mtg quiz. Pick a color scheme that fits well with magic the gathering and add those colors to the tailwind config.
 - [] Create a seed file for prisma that creates a test user.
 - [] If not logged in the user is redirected to the signIn page.

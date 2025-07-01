@@ -1,6 +1,6 @@
-import { FlatCompat } from "@eslint/eslintrc";
+import { FlatCompat } from '@eslint/eslintrc';
 import tseslint from 'typescript-eslint';
-import eslintConfigPrettier from 'eslint-config-prettier';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
@@ -8,41 +8,43 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-		ignores: ['.next']
-	},
-  ...compat.extends("next/core-web-vitals"),
+    ignores: ['.next'],
+  },
+  ...compat.extends('next/core-web-vitals'),
   {
     files: ['**/*.ts', '**/*.tsx'],
-		extends: [
-			...tseslint.configs.recommended,
-			...tseslint.configs.recommendedTypeChecked,
-			...tseslint.configs.stylisticTypeChecked
-		],
-		    rules: {
-		  "prettier/prettier": "error",
-		  "@typescript-eslint/array-type": "off",
-		  "@typescript-eslint/consistent-type-definitions": "off",
-    "@typescript-eslint/consistent-type-imports": [
-      "warn",
-      { prefer: "type-imports", fixStyle: "inline-type-imports" },
+    extends: [
+      ...tseslint.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+      ...tseslint.configs.stylisticTypeChecked,
     ],
-    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
-    "@typescript-eslint/require-await": "off",
-    "@typescript-eslint/no-misused-promises": [
-      "error",
-      { checksVoidReturn: { attributes: false } },
-    ],
-  },
+    rules: {
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/consistent-type-definitions': 'off',
+      '@typescript-eslint/consistent-type-imports': [
+        'warn',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
+    },
   },
   {
-		linterOptions: {
-			reportUnusedDisableDirectives: true
-		},
-		languageOptions: {
-			parserOptions: {
-				projectService: true
-			}
-		}
-	},
-	 eslintConfigPrettier
-)
+    linterOptions: {
+      reportUnusedDisableDirectives: true,
+    },
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+  },
+  eslintPluginPrettierRecommended,
+);
