@@ -6,6 +6,7 @@
 ## rules
 - use pnpm
 - do not commit anything to version history without asking for permission from user.
+- read ./README.md to understand the tech stack.
 
 ## workflow 
 Do the first incomplete task from the tasks section below.  When starting a new task create a new branch and check it out.  A completed task is [x] and incomplete task is []. Before starting a taks use context7 MCP to get the latest library information. If you are unclear about something then ask before proceeding. When you think you have finished a task prompt the user with "Task finished?". If the user replies "OK" then mark it as done in this file, commit changes and then merge the feature branch into the main branch.
@@ -13,7 +14,7 @@ Do the first incomplete task from the tasks section below.  When starting a new 
 ### tasks 
 - [x] Setup an app with a ts-react frontend and a ts-react backend. Add trpc.
 - [x] Add prettier, post commit hooks using husky and eslint.
-- [] Create a sample login screen for testing the login business logic. Enable login with email and password.
+- [x] Create a sample login screen for testing the login business logic. Enable login with email and password.
 - [] Replace the default / page with a custom page that just says mtg quiz. Pick a color scheme that fits well with magic the gathering and add those colors to the tailwind config.
 - [] Create a seed file for prisma that creates a test user.
 - [] If not logged in the user is redirected to the signIn page.
