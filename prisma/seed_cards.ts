@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import _ from 'lodash';
 
 const prisma = new PrismaClient();
 
@@ -21,7 +22,6 @@ async function main() {
     // Map data to Card model
     const mappedData = filteredData.map((card: any) => {
       // Validate required fields
-
       return {
         scryfallId: card.id,
         oracleId: card.oracle_id,
@@ -45,41 +45,38 @@ async function main() {
         borderColor: card.border_color,
         frame: card.frame,
         fullArt: card.full_art || false
-      };
-    });
+      } as const;
+    }) as any as Array<any>;
 
     console.log('Data mapped to Card model format');
 
-    // Progress bar setup
-    const total = mappedData.length;
-    let progress = 0;
+    const chunks = _.chunk(mappedData, Math.round(mappedData.length / 10));
+
+    // Seed data to database using createMany in chunks with progress bar
+    console.log('Starting database seeding with createMany in chunks...');
+    const totalChunks = chunks.length;
+    let processedChunks = 0;
     const barLength = 50;
 
     const updateProgressBar = () => {
-      progress++;
-      const percentage = Math.floor((progress / total) * 100);
-      const filled = Math.floor((barLength * progress) / total);
+      processedChunks++;
+      const percentage = Math.floor((processedChunks / totalChunks) * 100);
+      const filled = Math.floor((barLength * processedChunks) / totalChunks);
       const empty = barLength - filled;
       process.stdout.write(
-        `\rProgress: [${'#'.repeat(filled)}${' '.repeat(empty)}] ${percentage}% (${progress}/${total})`
+        `\rProgress: [${'#'.repeat(filled)}${' '.repeat(empty)}] ${percentage}% (${processedChunks}/${totalChunks} chunks)`
       );
     };
 
-    // Seed data to database with progress bar
-    console.log('Starting database seeding...');
-    for (const card of mappedData) {
-      const uniqueId = card.id || `${card.name}-${card.setCode}-${card.collectorNumber}`;
-      await prisma.card.upsert({
-        where: {
-          id: uniqueId,
-        },
-        update: { ...card, id: uniqueId },
-        create: { ...card, id: uniqueId },
+    for (const chunk of chunks) {
+      await prisma.card.createMany({
+        data: chunk,
+        skipDuplicates: true,
       });
       updateProgressBar();
     }
     process.stdout.write('\n'); // New line after progress bar completes
-    console.log('Database seeding completed successfully');
+    console.log('Database seeding completed successfully with createMany in chunks');
   } catch (error) {
     console.error('Error loading or seeding data:', error);
     throw error;

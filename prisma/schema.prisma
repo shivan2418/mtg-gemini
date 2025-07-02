@@ -15,7 +15,7 @@ datasource db {
 }
 
 model Card {
-  id             String   @id
+  id             String   @id @default(uuid())
   scryfallId     String   @unique
   oracleId       String
   name           String
