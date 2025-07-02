@@ -1,3 +1,5 @@
+//eslint-disable
+/* eslint-disable */
 import { PrismaClient } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
@@ -10,14 +12,24 @@ async function main() {
   console.log('Seeding database...');
   try {
     const __dirname = dirname(fileURLToPath(import.meta.url));
-    const filePath = join(__dirname, '../data/unique-artwork-20250628090446.json');
+    const filePath = join(
+      __dirname,
+      '../data/unique-artwork-20250628090446.json',
+    );
     const rawData = readFileSync(filePath, 'utf8');
     const data = JSON.parse(rawData);
     console.log('Data loaded successfully:', data.length, 'items');
 
     // Filter data based on promo and layout
-    const filteredData = data.filter((card: any) => !card.promo && card.layout === 'normal' && !!card?.image_uris?.art_crop);
-    console.log('Filtered data:', filteredData.length, 'items after excluding promo and non-normal layout');
+    const filteredData = data.filter(
+      (card: any) =>
+        !card.promo && card.layout === 'normal' && !!card?.image_uris?.art_crop,
+    );
+    console.log(
+      'Filtered data:',
+      filteredData.length,
+      'items after excluding promo and non-normal layout',
+    );
 
     // Map data to Card model
     const mappedData = filteredData.map((card: any) => {
@@ -44,7 +56,7 @@ async function main() {
         artistIds: card.artist_ids,
         borderColor: card.border_color,
         frame: card.frame,
-        fullArt: card.full_art || false
+        fullArt: card.full_art || false,
       } as const;
     }) as any as Array<any>;
 
@@ -64,7 +76,7 @@ async function main() {
       const filled = Math.floor((barLength * processedChunks) / totalChunks);
       const empty = barLength - filled;
       process.stdout.write(
-        `\rProgress: [${'#'.repeat(filled)}${' '.repeat(empty)}] ${percentage}% (${processedChunks}/${totalChunks} chunks)`
+        `\rProgress: [${'#'.repeat(filled)}${' '.repeat(empty)}] ${percentage}% (${processedChunks}/${totalChunks} chunks)`,
       );
     };
 
@@ -76,7 +88,9 @@ async function main() {
       updateProgressBar();
     }
     process.stdout.write('\n'); // New line after progress bar completes
-    console.log('Database seeding completed successfully with createMany in chunks');
+    console.log(
+      'Database seeding completed successfully with createMany in chunks',
+    );
   } catch (error) {
     console.error('Error loading or seeding data:', error);
     throw error;
