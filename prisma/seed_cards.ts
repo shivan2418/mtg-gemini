@@ -1,4 +1,3 @@
-//eslint-disable
 /* eslint-disable */
 import { PrismaClient } from '@prisma/client';
 import { readFileSync } from 'fs';
