@@ -16,6 +16,7 @@ datasource db {
 
 model Card {
   id             String   @id
+  scryfallId     String   @unique
   oracleId       String
   name           String
   releasedAt     DateTime
@@ -34,7 +35,6 @@ model Card {
   setSearchUri   String
   artist         String
   artistIds      String[]
-  illustrationId String
   borderColor    String
   frame          String
   fullArt        Boolean
