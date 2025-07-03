@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import type { SingleValue } from 'react-select';
+import type { RouterOutputs } from '@/trpc/react';
 
 // Dynamically import AsyncSelect to avoid SSR hydration issues
 const AsyncSelect = dynamic(() => import('react-select/async'), {
@@ -23,6 +24,11 @@ interface QuizGameProps {
   quizId: string;
 }
 
+// Type for the quiz data returned by getQuizById
+type QuizData = RouterOutputs['quiz']['getQuizById'];
+type QuizCard = NonNullable<QuizData>['cards'][number];
+type QuizAnswer = NonNullable<QuizData>['answers'][number];
+
 export function QuizGame({ quizId }: QuizGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] =
@@ -40,6 +46,24 @@ export function QuizGame({ quizId }: QuizGameProps) {
   }, []);
 
   const { data: quiz, isLoading } = api.quiz.getQuizById.useQuery({ quizId });
+
+  // Calculate the current card index based on answered cards
+  useEffect(() => {
+    if (quiz?.answers && quiz?.cards) {
+      const answeredCardIds = new Set(
+        quiz.answers.map((answer: QuizAnswer) => answer.cardId),
+      );
+      const firstUnansweredIndex = quiz.cards.findIndex(
+        (card: QuizCard) => !answeredCardIds.has(card.id),
+      );
+
+      // If all cards are answered, keep the current index (quiz should be completed)
+      // Otherwise, set to the first unanswered card
+      if (firstUnansweredIndex >= 0) {
+        setCurrentCardIndex(firstUnansweredIndex);
+      }
+    }
+  }, [quiz?.answers, quiz?.cards]);
 
   const submitAnswerMutation = api.quiz.submitAnswer.useMutation({
     onSuccess: (result) => {
