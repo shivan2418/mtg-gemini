@@ -19,11 +19,9 @@ Do the first incomplete task from the tasks section below. When starting a new t
 - [x] Setup an app with a ts-react frontend and a ts-react backend. Add trpc.
 - [x] Add prettier, post commit hooks using husky and eslint.
 - [x] Create a sample login screen for testing the login business logic. Enable login with email and password.
-- [] Replace the default / page with a custom page that just says mtg quiz. Pick a color scheme that fits well with magic the gathering and add those colors to the tailwind config.
-- [] Create a seed file for prisma that creates a test user.
-- [] If not logged in the user is redirected to the signIn page.
+- [x] Replace the default / page with a custom page that just says mtg quiz. Pick a color scheme that fits well with magic the gathering and add those colors to the tailwind config.
 
-- [] Create a script for seeding the dat abase.
+
 
 ### Screens
 
