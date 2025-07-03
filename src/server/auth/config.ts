@@ -44,11 +44,13 @@ export const authConfig = {
           return null;
         }
 
+        console.log('Attempting to find user with email:', credentials.email);
         const user = await db.user.findUnique({
           where: {
             email: credentials.email as string,
           },
         });
+        console.log('User query result:', user);
 
         if (!user?.password) {
           return null;
