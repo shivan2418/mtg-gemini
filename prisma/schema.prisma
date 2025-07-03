@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Card {
-  id           String   @id @default(uuid())
+  id           String       @id @default(uuid())
   oracleId     String
   name         String
   releasedAt   DateTime
@@ -30,7 +30,9 @@ model Card {
   borderColor  String
   frame        String
   fullArt      Boolean
-  scryfallId   String   @unique
+  scryfallId   String       @unique
+  quizzes      Quiz[]       @relation("QuizCards")
+  answers      QuizAnswer[]
 }
 
 
@@ -70,6 +72,32 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  quizzes       Quiz[]
+}
+
+model Quiz {
+  id           String        @id @default(uuid())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  completedAt  DateTime?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards        Card[]        @relation("QuizCards")
+  answers      QuizAnswer[]
+}
+
+model QuizAnswer {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  quizId       String
+  cardId       String
+  userAnswer   String
+  isCorrect    Boolean
+  timeSpent    Int?     // in milliseconds
+  quiz         Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  card         Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, cardId]) // Ensure one answer per card per quiz
 }
 
 model VerificationToken {
