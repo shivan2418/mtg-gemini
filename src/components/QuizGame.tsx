@@ -1,8 +1,23 @@
 'use client';
 
 import { api } from '@/trpc/react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
+import type { SingleValue } from 'react-select';
+
+// Dynamically import AsyncSelect to avoid SSR hydration issues
+const AsyncSelect = dynamic(() => import('react-select/async'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[50px] animate-pulse rounded-lg bg-gray-600" />
+  ),
+}) as any;
+
+interface CardOption {
+  value: string;
+  label: string;
+}
 
 interface QuizGameProps {
   quizId: string;
@@ -10,12 +25,19 @@ interface QuizGameProps {
 
 export function QuizGame({ quizId }: QuizGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [userAnswer, setUserAnswer] = useState('');
+  const [selectedCard, setSelectedCard] =
+    useState<SingleValue<CardOption>>(null);
   const [showResult, setShowResult] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<{
     isCorrect: boolean;
     correctAnswer: string;
   } | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { data: quiz, isLoading } = api.quiz.getQuizById.useQuery({ quizId });
 
@@ -36,21 +58,63 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const currentCard = quiz?.cards[currentCardIndex];
   const totalCards = quiz?.cards.length ?? 0;
 
+  const loadCards = useCallback((inputValue: string): Promise<CardOption[]> => {
+    return new Promise((resolve) => {
+      // Clear any existing timeout
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      // If input is too short, return empty array immediately
+      if (!inputValue || inputValue.length < 2) {
+        resolve([]);
+        return;
+      }
+
+      // Set up debounced API call
+      debounceTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await fetch(
+            `https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(inputValue)}`,
+          );
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch cards');
+          }
+
+          const data = await response.json();
+
+          // The API returns an object with a 'data' array containing card names
+          const options = data.data.map((cardName: string) => ({
+            value: cardName,
+            label: cardName,
+          }));
+
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          resolve(options);
+        } catch (error) {
+          console.error('Error fetching cards:', error);
+          resolve([]);
+        }
+      }, 300); // 300ms debounce delay
+    });
+  }, []);
+
   const handleSubmitAnswer = () => {
-    if (!currentCard || !userAnswer.trim()) return;
+    if (!currentCard || !selectedCard?.value) return;
 
     const startTime = Date.now();
     submitAnswerMutation.mutate({
       quizId: quiz.id,
       cardId: currentCard.id,
-      userAnswer: userAnswer.trim(),
+      userAnswer: selectedCard.value,
       timeSpent: Date.now() - startTime,
     });
   };
 
   const handleNextCard = () => {
     setShowResult(false);
-    setUserAnswer('');
+    setSelectedCard(null);
     setLastAnswer(null);
 
     if (currentCardIndex + 1 >= totalCards) {
@@ -61,12 +125,8 @@ export function QuizGame({ quizId }: QuizGameProps) {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !showResult) {
-      handleSubmitAnswer();
-    } else if (e.key === 'Enter' && showResult) {
-      handleNextCard();
-    }
+  const handleCardSelect = (option: SingleValue<CardOption>) => {
+    setSelectedCard(option);
   };
 
   if (isLoading) {
@@ -127,25 +187,79 @@ export function QuizGame({ quizId }: QuizGameProps) {
           <div className="space-y-4">
             <div>
               <label
-                htmlFor="answer"
+                htmlFor="card-search"
                 className="text-mtg-white mb-2 block text-lg font-semibold"
               >
                 What is the name of this card?
               </label>
-              <input
-                id="answer"
-                type="text"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Enter card name..."
-                className="text-mtg-white bg-mtg-dark border-mtg-gold placeholder-mtg-gray w-full rounded-lg border-2 px-4 py-3 text-lg focus:ring-2 focus:ring-yellow-400 focus:outline-none"
-                autoFocus
-              />
+              {isMounted && (
+                <AsyncSelect<CardOption>
+                  id="card-search"
+                  cacheOptions
+                  loadOptions={loadCards}
+                  defaultOptions={false}
+                  value={selectedCard}
+                  onChange={handleCardSelect}
+                  placeholder="Type at least 2 characters to search..."
+                  noOptionsMessage={({ inputValue }: { inputValue: string }) =>
+                    inputValue.length < 2
+                      ? 'Type at least 2 characters to search'
+                      : 'No cards found'
+                  }
+                  loadingMessage={() => 'Searching cards...'}
+                  styles={{
+                    control: (provided: any) => ({
+                      ...provided,
+                      minHeight: '50px',
+                      fontSize: '16px',
+                      borderRadius: '8px',
+                      border: '2px solid #d4af37',
+                      backgroundColor: '#1a1a1a',
+                      '&:hover': {
+                        border: '2px solid #f7d794',
+                      },
+                      '&:focus-within': {
+                        border: '2px solid #f7d794',
+                        boxShadow: '0 0 0 3px rgba(247, 215, 148, 0.1)',
+                      },
+                    }),
+                    placeholder: (provided: any) => ({
+                      ...provided,
+                      color: '#9ca3af',
+                    }),
+                    singleValue: (provided: any) => ({
+                      ...provided,
+                      color: '#ffffff',
+                    }),
+                    input: (provided: any) => ({
+                      ...provided,
+                      color: '#ffffff',
+                    }),
+                    menu: (provided: any) => ({
+                      ...provided,
+                      borderRadius: '8px',
+                      marginTop: '4px',
+                      backgroundColor: '#1a1a1a',
+                      border: '1px solid #d4af37',
+                    }),
+                    option: (provided: any, state: any) => ({
+                      ...provided,
+                      backgroundColor: state.isSelected
+                        ? '#d4af37'
+                        : state.isFocused
+                          ? '#2a2a2a'
+                          : '#1a1a1a',
+                      color: state.isSelected ? '#000000' : '#ffffff',
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                    }),
+                  }}
+                />
+              )}
             </div>
             <button
               onClick={handleSubmitAnswer}
-              disabled={!userAnswer.trim() || submitAnswerMutation.isPending}
+              disabled={!selectedCard?.value || submitAnswerMutation.isPending}
               className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold w-full rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               {submitAnswerMutation.isPending
@@ -169,7 +283,10 @@ export function QuizGame({ quizId }: QuizGameProps) {
               </div>
             )}
             <div className="text-mtg-gray text-lg">
-              Your answer: <span className="font-semibold">{userAnswer}</span>
+              Your answer:{' '}
+              <span className="font-semibold">
+                {selectedCard?.label ?? 'No answer'}
+              </span>
             </div>
             <button
               onClick={handleNextCard}
