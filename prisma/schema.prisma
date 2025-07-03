@@ -33,16 +33,6 @@ model Card {
   scryfallId   String   @unique
 }
 
-model Post {
-  id          Int      @id @default(autoincrement())
-  name        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-
-  @@index([name])
-}
 
 model Account {
   id                       String  @id @default(cuid())
@@ -79,7 +69,6 @@ model User {
   emailVerified DateTime?
   image         String?
   accounts      Account[]
-  posts         Post[]
   sessions      Session[]
 }
 
