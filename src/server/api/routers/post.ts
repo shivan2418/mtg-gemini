@@ -18,6 +18,14 @@ export const postRouter = createTRPCRouter({
   create: protectedProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
+      console.log('POST CREATE - session:', ctx.session);
+      console.log('POST CREATE - session.user:', ctx.session.user);
+      console.log('POST CREATE - session.user.id:', ctx.session.user.id);
+
+      if (!ctx.session.user.id) {
+        throw new Error('User ID is missing from session');
+      }
+
       return ctx.db.post.create({
         data: {
           name: input.name,

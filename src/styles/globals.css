@@ -4,4 +4,26 @@
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Magic: The Gathering Color Scheme */
+  --color-mtg-white: #faf7f0;
+  --color-mtg-blue: #0e68ab;
+  --color-mtg-black: #150b00;
+  --color-mtg-red: #d3202a;
+  --color-mtg-green: #00733e;
+  --color-mtg-gold: #e09f3e;
+  --color-mtg-gray: #6b7280;
+  --color-mtg-dark: #1a1a1a;
+  --color-mtg-artifact: #a8a8a8;
+  
+  /* MTG Color Variations */
+  --color-mtg-blue-light: #4a90e2;
+  --color-mtg-blue-dark: #0a4d7a;
+  --color-mtg-black-light: #2d2d2d;
+  --color-mtg-red-light: #ff6b6b;
+  --color-mtg-red-dark: #a41e22;
+  --color-mtg-green-light: #51cf66;
+  --color-mtg-green-dark: #005a2e;
+  --color-mtg-gold-light: #ffd43b;
+  --color-mtg-gold-dark: #b8860b;
 }

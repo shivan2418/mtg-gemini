@@ -40,19 +40,32 @@ export const authConfig = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('AUTHORIZE - Starting with credentials:', {
+          email: credentials?.email,
+          password: !!credentials?.password,
+        });
+
         if (!credentials?.email || !credentials.password) {
+          console.log('AUTHORIZE - Missing credentials');
           return null;
         }
 
-        console.log('Attempting to find user with email:', credentials.email);
+        console.log(
+          'AUTHORIZE - Attempting to find user with email:',
+          credentials.email,
+        );
         const user = await db.user.findUnique({
           where: {
             email: credentials.email as string,
           },
         });
-        console.log('User query result:', user);
+        console.log(
+          'AUTHORIZE - User query result:',
+          user ? { id: user.id, email: user.email, name: user.name } : null,
+        );
 
         if (!user?.password) {
+          console.log('AUTHORIZE - No user found or no password');
           return null;
         }
 
@@ -60,19 +73,54 @@ export const authConfig = {
           credentials.password as string,
           user.password,
         );
+        console.log('AUTHORIZE - Password validation result:', isValid);
 
-        return isValid ? user : null;
+        if (isValid) {
+          const userResult = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          };
+          console.log('AUTHORIZE - Returning user:', userResult);
+          return userResult;
+        }
+
+        console.log('AUTHORIZE - Invalid credentials, returning null');
+        return null;
       },
     }),
   ],
   adapter: PrismaAdapter(db),
+  session: { strategy: 'jwt' },
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    jwt: ({ user, token }) => {
+      console.log('JWT callback - user:', user, 'token:', token);
+      console.log(
+        'JWT callback - token.sub:',
+        token.sub,
+        'token.id before:',
+        token.id,
+      );
+      if (user) {
+        token.id = user.id;
+        console.log('JWT callback - Set token.id from user.id:', user.id);
+      } else if (token.sub && !token.id) {
+        // During token refresh, user is undefined but we need to preserve the ID
+        token.id = token.sub;
+        console.log('JWT callback - Set token.id from token.sub:', token.sub);
+      }
+      console.log('JWT callback - token.id after:', token.id);
+      return token;
+    },
+    session: ({ session, token }) => {
+      console.log('Session callback - session:', session, 'token:', token);
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id as string,
+        },
+      };
+    },
   },
 } satisfies NextAuthConfig;
