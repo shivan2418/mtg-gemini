@@ -209,15 +209,25 @@ export const quizRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      // Use dynamic threshold based on query length
+      // Shorter queries need lower thresholds to return results
+      const dynamicThreshold =
+        input.query.length <= 2
+          ? 0.1
+          : input.query.length <= 3
+            ? 0.2
+            : input.threshold;
+
       // Use PostgreSQL's trigram similarity for fuzzy matching
       // This provides much better fuzzy search than simple contains
       const cards = await ctx.db.$queryRaw<
         Array<{ name: string; similarity: number }>
       >`
-        SELECT name, similarity(name, ${input.query}) as similarity
+        SELECT name, MAX(similarity(name, ${input.query})) as similarity
         FROM "Card"
-        WHERE similarity(name, ${input.query}) > ${input.threshold}
-        ORDER BY similarity(name, ${input.query}) DESC, length(name) ASC
+        WHERE similarity(name, ${input.query}) > ${dynamicThreshold}
+        GROUP BY name
+        ORDER BY MAX(similarity(name, ${input.query})) DESC, length(name) ASC
         LIMIT ${input.limit}
       `;
 

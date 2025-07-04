@@ -1,9 +1,10 @@
 'use client';
 
 import { api } from '@/trpc/react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import debouncePromise from 'debounce-promise';
 import type { SingleValue } from 'react-select';
 import type { RouterOutputs } from '@/trpc/react';
 
@@ -81,33 +82,31 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const currentCard = quiz?.cards[currentCardIndex];
   const totalCards = quiz?.cards.length ?? 0;
 
-  // Simple search state management for the select component
-  const [searchQuery, setSearchQuery] = useState('');
+  const utils = api.useUtils();
 
-  // Implement proper debouncing with useEffect
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  // Create a debounced search function using debounce-promise
+  const searchCards = useCallback(
+    debouncePromise(async (query: string): Promise<CardOption[]> => {
+      if (query.length < 2) {
+        return [];
+      }
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
-
-  // Use tRPC query for card search with proper debouncing
-  const { data: cardOptions = [] } = api.quiz.searchCards.useQuery(
-    { query: debouncedSearchQuery, limit: 20 },
-    { enabled: debouncedSearchQuery.length >= 2 },
+      try {
+        const result = await utils.quiz.searchCards.fetch({
+          query,
+          limit: 5,
+        });
+        return result;
+      } catch (error) {
+        console.error('Search error:', error);
+        return [];
+      }
+    }, 200),
+    [utils],
   );
 
   const loadCards = (inputValue: string): Promise<CardOption[]> => {
-    setSearchQuery(inputValue);
-    if (inputValue.length < 2) {
-      return Promise.resolve([]);
-    }
-    // Return current options immediately, the query will update them
-    return Promise.resolve(cardOptions);
+    return searchCards(inputValue);
   };
 
   const handleSubmitAnswer = () => {
