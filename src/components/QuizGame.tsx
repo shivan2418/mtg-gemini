@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/trpc/react';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import debouncePromise from 'debounce-promise';
@@ -34,6 +34,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [selectedCard, setSelectedCard] =
     useState<SingleValue<CardOption>>(null);
+  const [inputValue, setInputValue] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<{
     isCorrect: boolean;
@@ -110,13 +111,17 @@ export function QuizGame({ quizId }: QuizGameProps) {
   };
 
   const handleSubmitAnswer = () => {
-    if (!currentCard || !selectedCard?.value || !quiz) return;
+    if (!currentCard || !quiz) return;
+
+    // Use selected card value if available, otherwise use typed input
+    const userAnswer = selectedCard?.value ?? inputValue.trim();
+    if (!userAnswer) return;
 
     const startTime = Date.now();
     submitAnswerMutation.mutate({
       quizId: quiz.id,
       cardId: currentCard.id,
-      userAnswer: selectedCard.value,
+      userAnswer,
       timeSpent: Date.now() - startTime,
     });
   };
@@ -124,6 +129,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const handleNextCard = () => {
     setShowResult(false);
     setSelectedCard(null);
+    setInputValue('');
     setLastAnswer(null);
 
     if (currentCardIndex + 1 >= totalCards) {
@@ -136,6 +142,14 @@ export function QuizGame({ quizId }: QuizGameProps) {
 
   const handleCardSelect = (option: SingleValue<CardOption>) => {
     setSelectedCard(option);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      handleSubmitAnswer();
+    }
   };
 
   if (isLoading) {
@@ -194,7 +208,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
 
         {!showResult ? (
           <div className="space-y-4">
-            <div>
+            <div className="relative">
               <label
                 htmlFor="card-search"
                 className="text-mtg-white mb-2 block text-lg font-semibold"
@@ -209,6 +223,9 @@ export function QuizGame({ quizId }: QuizGameProps) {
                   defaultOptions={false}
                   value={selectedCard}
                   onChange={handleCardSelect}
+                  onInputChange={(value: string) => setInputValue(value)}
+                  onKeyDown={handleKeyDown}
+                  inputValue={inputValue}
                   placeholder="Type at least 2 characters to search..."
                   noOptionsMessage={({ inputValue }: { inputValue: string }) =>
                     inputValue.length < 2
@@ -250,6 +267,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
                       marginTop: '4px',
                       backgroundColor: '#1a1a1a',
                       border: '1px solid #d4af37',
+                      zIndex: 9999,
                     }),
                     option: (provided: any, state: any) => ({
                       ...provided,
@@ -268,7 +286,10 @@ export function QuizGame({ quizId }: QuizGameProps) {
             </div>
             <button
               onClick={handleSubmitAnswer}
-              disabled={!selectedCard?.value || submitAnswerMutation.isPending}
+              disabled={
+                (!selectedCard?.value && !inputValue.trim()) ||
+                submitAnswerMutation.isPending
+              }
               className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold w-full rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               {submitAnswerMutation.isPending
@@ -294,7 +315,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
             <div className="text-mtg-gray text-lg">
               Your answer:{' '}
               <span className="font-semibold">
-                {selectedCard?.label ?? 'No answer'}
+                {selectedCard?.label ?? (inputValue || 'No answer')}
               </span>
             </div>
             <button

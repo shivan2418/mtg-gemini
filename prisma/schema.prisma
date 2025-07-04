@@ -82,6 +82,7 @@ model Quiz {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   completedAt  DateTime?
+  formatId     String?       // Quiz format identifier
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   cards        Card[]        @relation("QuizCards")

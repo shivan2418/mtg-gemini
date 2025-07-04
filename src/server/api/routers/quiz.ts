@@ -5,6 +5,14 @@ import {
   publicProcedure,
 } from '@/server/api/trpc';
 import { env } from '@/env';
+import {
+  getFormatById,
+  getAllActiveFormats,
+  buildFormatWhereClause,
+  formatToSummary,
+  validateFormat,
+  type QuizFormat,
+} from '@/lib/quiz-formats';
 
 export const quizRouter = createTRPCRouter({
   createQuiz: protectedProcedure
@@ -16,6 +24,7 @@ export const quizRouter = createTRPCRouter({
             .min(1)
             .max(50)
             .default(parseInt(env.NEXT_PUBLIC_QUIZ_CARD_COUNT)),
+          formatId: z.string().optional(),
         })
         .optional()
         .default({}),
@@ -26,12 +35,31 @@ export const quizRouter = createTRPCRouter({
 
       const cardCount =
         input?.cardCount ?? parseInt(env.NEXT_PUBLIC_QUIZ_CARD_COUNT);
+      const formatId = input?.formatId;
 
-      // Get total number of cards to ensure we don't request more than available
-      const totalCards = await ctx.db.card.count();
+      // Build where clause based on format with validation
+      let whereClause = {};
+      let selectedFormat: QuizFormat | null = null;
+
+      if (formatId) {
+        selectedFormat = getFormatById(formatId);
+
+        if (!validateFormat(selectedFormat)) {
+          throw new Error(
+            `Quiz format '${formatId}' is not properly configured`,
+          );
+        }
+
+        whereClause = buildFormatWhereClause(selectedFormat);
+      }
+
+      // Get total number of cards in the filtered pool
+      const totalCards = await ctx.db.card.count({
+        where: whereClause,
+      });
 
       if (totalCards === 0) {
-        throw new Error('No cards available in the database');
+        throw new Error('No cards available in the specified format');
       }
 
       const actualCardCount = Math.min(cardCount, totalCards);
@@ -42,6 +70,7 @@ export const quizRouter = createTRPCRouter({
       );
 
       const randomCards = await ctx.db.card.findMany({
+        where: whereClause,
         skip: randomOffset,
         take: actualCardCount,
         select: {
@@ -52,14 +81,15 @@ export const quizRouter = createTRPCRouter({
       // If we didn't get enough cards (edge case), get additional ones from the beginning
       if (randomCards.length < actualCardCount) {
         const additionalCards = await ctx.db.card.findMany({
-          take: actualCardCount - randomCards.length,
-          select: {
-            id: true,
-          },
           where: {
+            ...whereClause,
             id: {
               notIn: randomCards.map((card) => card.id),
             },
+          },
+          take: actualCardCount - randomCards.length,
+          select: {
+            id: true,
           },
         });
         randomCards.push(...additionalCards);
@@ -69,6 +99,7 @@ export const quizRouter = createTRPCRouter({
       const quiz = await ctx.db.quiz.create({
         data: {
           userId: ctx.session.user.id,
+          formatId: formatId,
           cards: {
             connect: randomCards.map((card) => ({ id: card.id })),
           },
@@ -257,6 +288,37 @@ export const quizRouter = createTRPCRouter({
         totalQuestions,
       };
     }),
+
+  getCardCountForFormat: publicProcedure
+    .input(
+      z.object({
+        formatId: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const format = getFormatById(input.formatId);
+
+      if (!validateFormat(format)) {
+        throw new Error(
+          `Quiz format '${input.formatId}' is not properly configured`,
+        );
+      }
+
+      const whereClause = buildFormatWhereClause(format);
+
+      const count = await ctx.db.card.count({
+        where: whereClause,
+      });
+
+      return {
+        count,
+        format: formatToSummary(format),
+      };
+    }),
+
+  getAllQuizFormats: publicProcedure.query(() => {
+    return getAllActiveFormats().map(formatToSummary);
+  }),
 
   searchCards: publicProcedure
     .input(

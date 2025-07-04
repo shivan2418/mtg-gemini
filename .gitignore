@@ -4,7 +4,9 @@
 /node_modules
 /.pnp
 .pnp.js
-data
+# data
+data/oracle-cards-20250628210855.json
+data/unique-artwork-20250628090446.json
 # testing
 /coverage
 
