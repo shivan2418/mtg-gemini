@@ -103,7 +103,7 @@ export const quizRouter = createTRPCRouter({
           cards: {
             select: {
               id: true,
-              name: true,
+              name: false,
               artOnlyUri: true,
             },
           },
@@ -196,6 +196,59 @@ export const quizRouter = createTRPCRouter({
         },
       });
 
+      const score = quiz.answers.filter((answer) => answer.isCorrect).length;
+      const totalQuestions = quiz.cards.length;
+
+      return {
+        quiz,
+        score,
+        totalQuestions,
+      };
+    }),
+
+  getQuizResults: protectedProcedure
+    .input(
+      z.object({
+        quizId: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const quiz = await ctx.db.quiz.findUnique({
+        where: {
+          id: input.quizId,
+          userId: ctx.session.user.id, // Ensure user can only access their own quizzes
+          completedAt: { not: null }, // Only allow access to completed quizzes
+        },
+        include: {
+          cards: {
+            select: {
+              id: true,
+              name: true,
+              artOnlyUri: true,
+            },
+          },
+          answers: {
+            include: {
+              card: {
+                select: {
+                  id: true,
+                  name: true,
+                  artOnlyUri: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
+        },
+      });
+
+      if (!quiz) {
+        throw new Error('Quiz not found or not completed');
+      }
+
+      // Calculate the score
       const score = quiz.answers.filter((answer) => answer.isCorrect).length;
       const totalQuestions = quiz.cards.length;
 
