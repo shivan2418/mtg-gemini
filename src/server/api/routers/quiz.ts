@@ -4,13 +4,18 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '@/server/api/trpc';
+import { env } from '@/env';
 
 export const quizRouter = createTRPCRouter({
   createQuiz: protectedProcedure
     .input(
       z
         .object({
-          cardCount: z.number().min(1).max(50).default(20),
+          cardCount: z
+            .number()
+            .min(1)
+            .max(50)
+            .default(parseInt(env.NEXT_PUBLIC_QUIZ_CARD_COUNT)),
         })
         .optional()
         .default({}),
@@ -19,7 +24,8 @@ export const quizRouter = createTRPCRouter({
       console.log('CreateQuiz - User ID:', ctx.session.user.id);
       console.log('CreateQuiz - Full session:', ctx.session);
 
-      const cardCount = input?.cardCount ?? 20;
+      const cardCount =
+        input?.cardCount ?? parseInt(env.NEXT_PUBLIC_QUIZ_CARD_COUNT);
 
       // Get total number of cards to ensure we don't request more than available
       const totalCards = await ctx.db.card.count();

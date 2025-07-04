@@ -4,12 +4,15 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/react';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { env } from '@/env';
 
 interface StartQuizButtonProps {
   cardCount?: number;
 }
 
-export function StartQuizButton({ cardCount = 20 }: StartQuizButtonProps = {}) {
+export function StartQuizButton({
+  cardCount = parseInt(env.NEXT_PUBLIC_QUIZ_CARD_COUNT),
+}: StartQuizButtonProps = {}) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
