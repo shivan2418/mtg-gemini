@@ -103,7 +103,6 @@ export const quizRouter = createTRPCRouter({
           cards: {
             select: {
               id: true,
-              name: false,
               artOnlyUri: true,
             },
           },

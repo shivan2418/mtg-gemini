@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/trpc/react';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import debouncePromise from 'debounce-promise';
@@ -74,8 +74,8 @@ export function QuizGame({ quizId }: QuizGameProps) {
 
   const completeQuizMutation = api.quiz.completeQuiz.useMutation({
     onSuccess: () => {
-      // Redirect to results or home page
-      window.location.href = '/';
+      // Redirect to results page
+      window.location.href = `/quiz/${quiz!.id}/results`;
     },
   });
 
