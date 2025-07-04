@@ -34,6 +34,7 @@ declare module 'next-auth' {
 export const authConfig = {
   providers: [
     CredentialsProvider({
+      id: 'credentials',
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -82,6 +83,8 @@ export const authConfig = {
             name: user.name,
           };
           console.log('AUTHORIZE - Returning user:', userResult);
+          console.log('AUTHORIZE - User ID type:', typeof user.id);
+          console.log('AUTHORIZE - User ID value:', user.id);
           return userResult;
         }
 
@@ -93,22 +96,26 @@ export const authConfig = {
   adapter: PrismaAdapter(db),
   session: { strategy: 'jwt' },
   callbacks: {
-    jwt: ({ user, token }) => {
+    jwt: async ({ user, token }) => {
       console.log('JWT callback - user:', user, 'token:', token);
-      console.log(
-        'JWT callback - token.sub:',
-        token.sub,
-        'token.id before:',
-        token.id,
-      );
+
       if (user) {
+        // User object is available during sign in
         token.id = user.id;
+        token.email = user.email;
         console.log('JWT callback - Set token.id from user.id:', user.id);
-      } else if (token.sub && !token.id) {
-        // During token refresh, user is undefined but we need to preserve the ID
-        token.id = token.sub;
-        console.log('JWT callback - Set token.id from token.sub:', token.sub);
+      } else if (token.email) {
+        // On subsequent requests, look up the user by email to get the correct ID
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email },
+          select: { id: true },
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+          console.log('JWT callback - Fetched user ID from DB:', dbUser.id);
+        }
       }
+
       console.log('JWT callback - token.id after:', token.id);
       return token;
     },

@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/trpc/react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import type { SingleValue } from 'react-select';
@@ -39,7 +39,6 @@ export function QuizGame({ quizId }: QuizGameProps) {
     correctAnswer: string;
   } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -82,50 +81,37 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const currentCard = quiz?.cards[currentCardIndex];
   const totalCards = quiz?.cards.length ?? 0;
 
-  const loadCards = useCallback((inputValue: string): Promise<CardOption[]> => {
-    return new Promise((resolve) => {
-      // Clear any existing timeout
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
+  // Simple search state management for the select component
+  const [searchQuery, setSearchQuery] = useState('');
 
-      // If input is too short, return empty array immediately
-      if (!inputValue || inputValue.length < 2) {
-        resolve([]);
-        return;
-      }
+  // Implement proper debouncing with useEffect
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-      // Set up debounced API call
-      debounceTimeoutRef.current = setTimeout(async () => {
-        try {
-          const response = await fetch(
-            `https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(inputValue)}`,
-          );
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
 
-          if (!response.ok) {
-            throw new Error('Failed to fetch cards');
-          }
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
-          const data = await response.json();
+  // Use tRPC query for card search with proper debouncing
+  const { data: cardOptions = [] } = api.quiz.searchCards.useQuery(
+    { query: debouncedSearchQuery, limit: 20 },
+    { enabled: debouncedSearchQuery.length >= 2 },
+  );
 
-          // The API returns an object with a 'data' array containing card names
-          const options = data.data.map((cardName: string) => ({
-            value: cardName,
-            label: cardName,
-          }));
-
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          resolve(options);
-        } catch (error) {
-          console.error('Error fetching cards:', error);
-          resolve([]);
-        }
-      }, 300); // 300ms debounce delay
-    });
-  }, []);
+  const loadCards = (inputValue: string): Promise<CardOption[]> => {
+    setSearchQuery(inputValue);
+    if (inputValue.length < 2) {
+      return Promise.resolve([]);
+    }
+    // Return current options immediately, the query will update them
+    return Promise.resolve(cardOptions);
+  };
 
   const handleSubmitAnswer = () => {
-    if (!currentCard || !selectedCard?.value) return;
+    if (!currentCard || !selectedCard?.value || !quiz) return;
 
     const startTime = Date.now();
     submitAnswerMutation.mutate({

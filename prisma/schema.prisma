@@ -33,6 +33,8 @@ model Card {
   scryfallId   String       @unique
   quizzes      Quiz[]       @relation("QuizCards")
   answers      QuizAnswer[]
+
+  @@index([name])
 }
 
 

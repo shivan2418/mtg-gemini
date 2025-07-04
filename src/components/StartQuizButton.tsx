@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { api } from '@/trpc/react';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 interface StartQuizButtonProps {
   cardCount?: number;
@@ -11,6 +12,7 @@ interface StartQuizButtonProps {
 export function StartQuizButton({ cardCount = 20 }: StartQuizButtonProps = {}) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { data: session } = useSession();
 
   const createQuizMutation = api.quiz.createQuiz.useMutation({
     onSuccess: (quiz) => {
@@ -26,6 +28,11 @@ export function StartQuizButton({ cardCount = 20 }: StartQuizButtonProps = {}) {
   });
 
   const handleStartQuiz = () => {
+    if (!session) {
+      // Redirect to signin if not authenticated
+      router.push('/auth/signin');
+      return;
+    }
     setIsLoading(true);
     createQuizMutation.mutate({ cardCount });
   };

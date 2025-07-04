@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '@/server/api/trpc';
 
 export const quizRouter = createTRPCRouter({
   createQuiz: protectedProcedure
@@ -12,6 +16,9 @@ export const quizRouter = createTRPCRouter({
         .default({}),
     )
     .mutation(async ({ ctx, input }) => {
+      console.log('CreateQuiz - User ID:', ctx.session.user.id);
+      console.log('CreateQuiz - Full session:', ctx.session);
+
       const cardCount = input?.cardCount ?? 20;
 
       // Get total number of cards to ensure we don't request more than available
@@ -191,5 +198,32 @@ export const quizRouter = createTRPCRouter({
         score,
         totalQuestions,
       };
+    }),
+
+  searchCards: publicProcedure
+    .input(
+      z.object({
+        query: z.string().min(2).max(100),
+        limit: z.number().min(1).max(50).default(20),
+        threshold: z.number().min(0).max(1).default(0.3),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Use PostgreSQL's trigram similarity for fuzzy matching
+      // This provides much better fuzzy search than simple contains
+      const cards = await ctx.db.$queryRaw<
+        Array<{ name: string; similarity: number }>
+      >`
+        SELECT name, similarity(name, ${input.query}) as similarity
+        FROM "Card"
+        WHERE similarity(name, ${input.query}) > ${input.threshold}
+        ORDER BY similarity(name, ${input.query}) DESC, length(name) ASC
+        LIMIT ${input.limit}
+      `;
+
+      return cards.map((card) => ({
+        value: card.name,
+        label: card.name,
+      }));
     }),
 });

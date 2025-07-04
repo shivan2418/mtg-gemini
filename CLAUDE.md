@@ -4,12 +4,13 @@
 
 - We are building a app webapp where people are presented with the artwork for a magic the gathering card and have to type the name of the card.
 
-## rules
+## Rules
 
 - use pnpm
 - do not commit anything to version history without asking for permission from user.
 - read ./README.md to understand the tech stack.
 - **Type Safety**: Always use generated types from Prisma and tRPC instead of `any`. Use `RouterOutputs` and `RouterInputs` from tRPC to create proper type aliases when TypeScript can't infer types automatically. The ESLint config enforces this with strict `no-explicit-any` rules.
+- Assume that the development server is already running at localhost:3000
 
 ## workflow
 
