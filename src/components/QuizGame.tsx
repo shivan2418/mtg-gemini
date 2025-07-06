@@ -3,13 +3,8 @@
 import { api } from '@/trpc/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import debouncePromise from 'debounce-promise';
 import type { RouterOutputs } from '@/trpc/react';
-
-interface CardOption {
-  value: string;
-  label: string;
-}
+import { useCardSearch } from '@/hooks/useCardSearch';
 
 interface QuizGameProps {
   quizId: string;
@@ -24,7 +19,6 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [suggestion, setSuggestion] = useState('');
-  const [suggestions, setSuggestions] = useState<CardOption[]>([]);
   const [showResult, setShowResult] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<{
     isCorrect: boolean;
@@ -68,38 +62,31 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const currentCard = quiz?.cards[currentCardIndex];
   const totalCards = quiz?.cards.length ?? 0;
 
-  const utils = api.useUtils();
+  // Use local card search instead of API
+  const { searchCards: localSearchCards } = useCardSearch();
 
-  // Create a debounced search function using debounce-promise
+  // Create a search function that uses local search
   const searchCards = useCallback(
-    debouncePromise(async (query: string): Promise<CardOption[]> => {
+    (query: string) => {
       if (query.length < 2) {
-        setSuggestions([]);
         setSuggestion('');
-        return [];
+        return;
       }
 
       try {
-        const result = await utils.quiz.searchCards.fetch({
-          query,
-          limit: 5,
-        });
-        setSuggestions(result);
+        const result = localSearchCards(query, 5);
         // Set the first suggestion as the inline suggestion
         if (result.length > 0 && result[0]) {
           setSuggestion(result[0].label);
         } else {
           setSuggestion('');
         }
-        return result;
       } catch (error) {
         console.error('Search error:', error);
-        setSuggestions([]);
         setSuggestion('');
-        return [];
       }
-    }, 200),
-    [utils],
+    },
+    [localSearchCards],
   );
 
   const handleSubmitAnswer = () => {
@@ -121,7 +108,6 @@ export function QuizGame({ quizId }: QuizGameProps) {
     setShowResult(false);
     setInputValue('');
     setSuggestion('');
-    setSuggestions([]);
     setLastAnswer(null);
 
     if (currentCardIndex + 1 >= totalCards) {
@@ -149,7 +135,10 @@ export function QuizGame({ quizId }: QuizGameProps) {
       event.preventDefault();
       event.stopPropagation();
       handleSubmitAnswer();
-    } else if (event.key === 'Tab' && suggestion && suggestion.toLowerCase().startsWith(inputValue.toLowerCase())) {
+    } else if (
+      event.key === 'Tab' &&
+      suggestion?.toLowerCase().startsWith(inputValue.toLowerCase())
+    ) {
       event.preventDefault();
       acceptSuggestion();
     }
@@ -211,18 +200,6 @@ export function QuizGame({ quizId }: QuizGameProps) {
 
         {!showResult ? (
           <div className="space-y-4">
-                        <button
-                          onClick={handleSubmitAnswer}
-                          disabled={
-                            !inputValue.trim() ||
-                            submitAnswerMutation.isPending
-                          }
-                          className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold w-full rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-                        >
-                          {submitAnswerMutation.isPending
-                            ? 'Submitting...'
-                            : 'Submit Answer'}
-                        </button>
             <div className="relative">
               <label
                 htmlFor="card-search"
@@ -238,24 +215,40 @@ export function QuizGame({ quizId }: QuizGameProps) {
                   onChange={(e) => handleInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type at least 2 characters to search..."
-                  className="w-full min-h-[50px] px-4 py-3 text-base text-white bg-[#1a1a1a] border-2 border-[#d4af37] rounded-lg focus:border-[#f7d794] focus:outline-none focus:ring-3 focus:ring-[rgba(247,215,148,0.1)] hover:border-[#f7d794] transition-colors"
+                  className="min-h-[50px] w-full rounded-lg border-2 border-[#d4af37] bg-[#1a1a1a] px-4 py-3 text-base text-white transition-colors hover:border-[#f7d794] focus:border-[#f7d794] focus:ring-3 focus:ring-[rgba(247,215,148,0.1)] focus:outline-none"
                 />
                 {/* Ghost text for suggestion */}
-                {suggestion && suggestion.toLowerCase().startsWith(inputValue.toLowerCase()) && inputValue.length >= 2 && (
-                  <div className="absolute left-4 top-3 text-base text-gray-400 pointer-events-none z-10">
-                    <span className="invisible">{inputValue}</span>
-                    <span>{suggestion.slice(inputValue.length)}</span>
-                  </div>
-                )}
+                {suggestion &&
+                  suggestion
+                    .toLowerCase()
+                    .startsWith(inputValue.toLowerCase()) &&
+                  inputValue.length >= 2 && (
+                    <div className="pointer-events-none absolute top-3 left-4 z-10 text-base text-gray-400">
+                      <span className="invisible">{inputValue}</span>
+                      <span>{suggestion.slice(inputValue.length)}</span>
+                    </div>
+                  )}
                 {/* Hint text */}
-                {suggestion && suggestion.toLowerCase().startsWith(inputValue.toLowerCase()) && inputValue.length >= 2 && (
-                  <div className="absolute right-4 top-3 text-sm text-gray-500 pointer-events-none">
-                    Press Tab to accept
-                  </div>
-                )}
+                {suggestion &&
+                  suggestion
+                    .toLowerCase()
+                    .startsWith(inputValue.toLowerCase()) &&
+                  inputValue.length >= 2 && (
+                    <div className="pointer-events-none absolute top-3 right-4 text-sm text-gray-500">
+                      Press Tab to accept
+                    </div>
+                  )}
               </div>
             </div>
-
+            <button
+              onClick={handleSubmitAnswer}
+              disabled={!inputValue.trim() || submitAnswerMutation.isPending}
+              className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold w-full rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {submitAnswerMutation.isPending
+                ? 'Submitting...'
+                : 'Submit Answer'}
+            </button>
           </div>
         ) : (
           <div className="space-y-4 text-center">
@@ -274,9 +267,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
             )}
             <div className="text-mtg-gray text-lg">
               Your answer:{' '}
-              <span className="font-semibold">
-                {inputValue || 'No answer'}
-              </span>
+              <span className="font-semibold">{inputValue || 'No answer'}</span>
             </div>
             <button
               onClick={handleNextCard}

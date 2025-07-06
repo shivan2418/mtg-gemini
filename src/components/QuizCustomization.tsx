@@ -22,7 +22,6 @@ export function QuizCustomization({ onBack }: QuizCustomizationProps) {
     });
   const [selectedFormat, setSelectedFormat] = useState<string>('classic');
 
-
   const createQuizMutation = api.quiz.createQuiz.useMutation({
     onSuccess: (quiz) => {
       router.push(`/quiz/${quiz.id}`);

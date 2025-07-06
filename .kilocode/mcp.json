@@ -10,7 +10,8 @@
       "alwaysAllow": [
         "git_status",
         "git_add",
-        "git_commit"
+        "git_commit",
+        "git_diff_unstaged"
       ]
     }
   }
