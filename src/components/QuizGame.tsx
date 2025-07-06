@@ -3,18 +3,8 @@
 import { api } from '@/trpc/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
 import debouncePromise from 'debounce-promise';
-import type { SingleValue } from 'react-select';
 import type { RouterOutputs } from '@/trpc/react';
-
-// Dynamically import AsyncSelect to avoid SSR hydration issues
-const AsyncSelect = dynamic(() => import('react-select/async'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[50px] animate-pulse rounded-lg bg-gray-600" />
-  ),
-}) as any;
 
 interface CardOption {
   value: string;
@@ -32,19 +22,14 @@ type QuizAnswer = NonNullable<QuizData>['answers'][number];
 
 export function QuizGame({ quizId }: QuizGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [selectedCard, setSelectedCard] =
-    useState<SingleValue<CardOption>>(null);
   const [inputValue, setInputValue] = useState('');
+  const [suggestion, setSuggestion] = useState('');
+  const [suggestions, setSuggestions] = useState<CardOption[]>([]);
   const [showResult, setShowResult] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<{
     isCorrect: boolean;
     correctAnswer: string;
   } | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const { data: quiz, isLoading } = api.quiz.getQuizById.useQuery({ quizId });
 
@@ -89,6 +74,8 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const searchCards = useCallback(
     debouncePromise(async (query: string): Promise<CardOption[]> => {
       if (query.length < 2) {
+        setSuggestions([]);
+        setSuggestion('');
         return [];
       }
 
@@ -97,24 +84,28 @@ export function QuizGame({ quizId }: QuizGameProps) {
           query,
           limit: 5,
         });
+        setSuggestions(result);
+        // Set the first suggestion as the inline suggestion
+        if (result.length > 0 && result[0]) {
+          setSuggestion(result[0].label);
+        } else {
+          setSuggestion('');
+        }
         return result;
       } catch (error) {
         console.error('Search error:', error);
+        setSuggestions([]);
+        setSuggestion('');
         return [];
       }
     }, 200),
     [utils],
   );
 
-  const loadCards = (inputValue: string): Promise<CardOption[]> => {
-    return searchCards(inputValue);
-  };
-
   const handleSubmitAnswer = () => {
     if (!currentCard || !quiz) return;
 
-    // Use selected card value if available, otherwise use typed input
-    const userAnswer = selectedCard?.value ?? inputValue.trim();
+    const userAnswer = inputValue.trim();
     if (!userAnswer) return;
 
     const startTime = Date.now();
@@ -128,8 +119,9 @@ export function QuizGame({ quizId }: QuizGameProps) {
 
   const handleNextCard = () => {
     setShowResult(false);
-    setSelectedCard(null);
     setInputValue('');
+    setSuggestion('');
+    setSuggestions([]);
     setLastAnswer(null);
 
     if (currentCardIndex + 1 >= totalCards) {
@@ -140,8 +132,16 @@ export function QuizGame({ quizId }: QuizGameProps) {
     }
   };
 
-  const handleCardSelect = (option: SingleValue<CardOption>) => {
-    setSelectedCard(option);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    searchCards(value);
+  };
+
+  const acceptSuggestion = () => {
+    if (suggestion) {
+      setInputValue(suggestion);
+      setSuggestion('');
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -149,6 +149,9 @@ export function QuizGame({ quizId }: QuizGameProps) {
       event.preventDefault();
       event.stopPropagation();
       handleSubmitAnswer();
+    } else if (event.key === 'Tab' && suggestion && suggestion.toLowerCase().startsWith(inputValue.toLowerCase())) {
+      event.preventDefault();
+      acceptSuggestion();
     }
   };
 
@@ -208,6 +211,18 @@ export function QuizGame({ quizId }: QuizGameProps) {
 
         {!showResult ? (
           <div className="space-y-4">
+                        <button
+                          onClick={handleSubmitAnswer}
+                          disabled={
+                            !inputValue.trim() ||
+                            submitAnswerMutation.isPending
+                          }
+                          className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold w-full rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+                        >
+                          {submitAnswerMutation.isPending
+                            ? 'Submitting...'
+                            : 'Submit Answer'}
+                        </button>
             <div className="relative">
               <label
                 htmlFor="card-search"
@@ -215,87 +230,32 @@ export function QuizGame({ quizId }: QuizGameProps) {
               >
                 What is the name of this card?
               </label>
-              {isMounted && (
-                <AsyncSelect<CardOption>
+              <div className="relative">
+                <input
                   id="card-search"
-                  cacheOptions
-                  loadOptions={loadCards}
-                  defaultOptions={false}
-                  value={selectedCard}
-                  onChange={handleCardSelect}
-                  onInputChange={(value: string) => setInputValue(value)}
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  inputValue={inputValue}
                   placeholder="Type at least 2 characters to search..."
-                  noOptionsMessage={({ inputValue }: { inputValue: string }) =>
-                    inputValue.length < 2
-                      ? 'Type at least 2 characters to search'
-                      : 'No cards found'
-                  }
-                  loadingMessage={() => 'Searching cards...'}
-                  styles={{
-                    control: (provided: any) => ({
-                      ...provided,
-                      minHeight: '50px',
-                      fontSize: '16px',
-                      borderRadius: '8px',
-                      border: '2px solid #d4af37',
-                      backgroundColor: '#1a1a1a',
-                      '&:hover': {
-                        border: '2px solid #f7d794',
-                      },
-                      '&:focus-within': {
-                        border: '2px solid #f7d794',
-                        boxShadow: '0 0 0 3px rgba(247, 215, 148, 0.1)',
-                      },
-                    }),
-                    placeholder: (provided: any) => ({
-                      ...provided,
-                      color: '#9ca3af',
-                    }),
-                    singleValue: (provided: any) => ({
-                      ...provided,
-                      color: '#ffffff',
-                    }),
-                    input: (provided: any) => ({
-                      ...provided,
-                      color: '#ffffff',
-                    }),
-                    menu: (provided: any) => ({
-                      ...provided,
-                      borderRadius: '8px',
-                      marginTop: '4px',
-                      backgroundColor: '#1a1a1a',
-                      border: '1px solid #d4af37',
-                      zIndex: 9999,
-                    }),
-                    option: (provided: any, state: any) => ({
-                      ...provided,
-                      backgroundColor: state.isSelected
-                        ? '#d4af37'
-                        : state.isFocused
-                          ? '#2a2a2a'
-                          : '#1a1a1a',
-                      color: state.isSelected ? '#000000' : '#ffffff',
-                      padding: '12px 16px',
-                      cursor: 'pointer',
-                    }),
-                  }}
+                  className="w-full min-h-[50px] px-4 py-3 text-base text-white bg-[#1a1a1a] border-2 border-[#d4af37] rounded-lg focus:border-[#f7d794] focus:outline-none focus:ring-3 focus:ring-[rgba(247,215,148,0.1)] hover:border-[#f7d794] transition-colors"
                 />
-              )}
+                {/* Ghost text for suggestion */}
+                {suggestion && suggestion.toLowerCase().startsWith(inputValue.toLowerCase()) && inputValue.length >= 2 && (
+                  <div className="absolute left-4 top-3 text-base text-gray-400 pointer-events-none z-10">
+                    <span className="invisible">{inputValue}</span>
+                    <span>{suggestion.slice(inputValue.length)}</span>
+                  </div>
+                )}
+                {/* Hint text */}
+                {suggestion && suggestion.toLowerCase().startsWith(inputValue.toLowerCase()) && inputValue.length >= 2 && (
+                  <div className="absolute right-4 top-3 text-sm text-gray-500 pointer-events-none">
+                    Press Tab to accept
+                  </div>
+                )}
+              </div>
             </div>
-            <button
-              onClick={handleSubmitAnswer}
-              disabled={
-                (!selectedCard?.value && !inputValue.trim()) ||
-                submitAnswerMutation.isPending
-              }
-              className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold w-full rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-            >
-              {submitAnswerMutation.isPending
-                ? 'Submitting...'
-                : 'Submit Answer'}
-            </button>
+
           </div>
         ) : (
           <div className="space-y-4 text-center">
@@ -315,7 +275,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
             <div className="text-mtg-gray text-lg">
               Your answer:{' '}
               <span className="font-semibold">
-                {selectedCard?.label ?? (inputValue || 'No answer')}
+                {inputValue || 'No answer'}
               </span>
             </div>
             <button
