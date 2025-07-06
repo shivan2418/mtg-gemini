@@ -83,6 +83,7 @@ model Quiz {
   updatedAt    DateTime      @updatedAt
   completedAt  DateTime?
   formatId     String?       // Quiz format identifier
+  seed         Int?          // Random seed for reproducible card selection
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   cards        Card[]        @relation("QuizCards")

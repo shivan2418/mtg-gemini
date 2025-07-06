@@ -20,6 +20,8 @@
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
     "start": "next start",
+    "test": "node --import tsx tests/seeded-random.test.ts",
+    "test:watch": "node --import tsx --test --watch 'tests/**/*.test.ts'",
     "typecheck": "tsc --noEmit",
     "prepare": "husky"
   },
@@ -45,6 +47,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@jest/globals": "^30.0.4",
     "@tailwindcss/postcss": "^4.0.15",
     "@types/bcryptjs": "^3.0.0",
     "@types/debounce-promise": "^3.1.9",

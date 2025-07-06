@@ -13,6 +13,7 @@ import {
   validateFormat,
   type QuizFormat,
 } from '@/lib/quiz-formats';
+import { getRandomOffset } from '@/lib/seeded-random';
 
 export const quizRouter = createTRPCRouter({
   createQuiz: protectedProcedure
@@ -64,10 +65,11 @@ export const quizRouter = createTRPCRouter({
 
       const actualCardCount = Math.min(cardCount, totalCards);
 
-      // Get random cards using Prisma's skip and take with random offset
-      const randomOffset = Math.floor(
-        Math.random() * Math.max(0, totalCards - actualCardCount),
-      );
+      // Generate a random seed for reproducible card selection
+      const seed = Math.floor(Math.random() * 1000000);
+
+      // Get random cards using seeded random for reproducible selection
+      const randomOffset = getRandomOffset(seed, totalCards, actualCardCount);
 
       const randomCards = await ctx.db.card.findMany({
         where: whereClause,
@@ -100,6 +102,7 @@ export const quizRouter = createTRPCRouter({
         data: {
           userId: ctx.session.user.id,
           formatId: formatId,
+          seed: seed,
           cards: {
             connect: randomCards.map((card) => ({ id: card.id })),
           },
