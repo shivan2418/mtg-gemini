@@ -7,6 +7,7 @@
 ## Rules
 
 - use pnpm
+- consult prettier.config.js to know what format to write files in.
 - do not commit anything to version history without asking for permission from user.
 - read ./README.md to understand the tech stack.
 - **Type Safety**: Always use generated types from Prisma and tRPC instead of `any`. Use `RouterOutputs` and `RouterInputs` from tRPC to create proper type aliases when TypeScript can't infer types automatically. The ESLint config enforces this with strict `no-explicit-any` rules.
