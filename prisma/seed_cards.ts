@@ -19,11 +19,18 @@ async function main() {
     const data = JSON.parse(rawData);
     console.log('Data loaded successfully:', data.length, 'items');
 
-    // Filter data based on promo and layout
+    // Filter data based on Scryfall criteria: no split cards, tokens, promos, or joke cards; paper format only; must have art_crop
     const filteredData = data.filter(
       (card: any) =>
-        !card.promo && card.layout === 'normal' && !!card?.image_uris?.art_crop,
+        card.layout === 'normal' && // Exclude split cards and other non-normal layouts
+        !card.type_line.toLowerCase().includes('token') && // Exclude tokens
+        !card.promo && // Exclude promo cards
+        card.set_type !== 'funny' && // Exclude joke cards (Un-sets)
+        card.set !== 'pCEL' &&
+        card.games.includes('paper') && // Ensure available in paper format
+        !!card?.image_uris?.art_crop, // Ensure artwork exists for quiz
     );
+
     console.log(
       'Filtered data:',
       filteredData.length,
