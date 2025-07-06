@@ -2,7 +2,7 @@
 
 import { api } from '@/trpc/react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { env } from '@/env';
 
@@ -16,13 +16,37 @@ export function QuizCustomization({ onBack }: QuizCustomizationProps) {
   const { data: session } = useSession();
 
   const { data: quizFormats, isLoading: isLoadingFormats } =
-    api.quiz.getAllQuizFormats.useQuery();
+    api.quiz.getAllQuizFormats.useQuery(undefined, {
+      staleTime: 1000 * 60 * 10, // 10 minutes - quiz formats rarely change
+      gcTime: 1000 * 60 * 60, // 1 hour
+    });
   const [selectedFormat, setSelectedFormat] = useState<string>('classic');
+  const utils = api.useUtils();
+
+  // Prefetch card counts for all formats when component mounts
+  useEffect(() => {
+    if (quizFormats) {
+      quizFormats.forEach((format) => {
+        // Prefetch card count for each format
+        void utils.quiz.getCardCountForFormat.prefetch(
+          { formatId: format.id },
+          {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            gcTime: 1000 * 60 * 30, // 30 minutes
+          },
+        );
+      });
+    }
+  }, [quizFormats, utils]);
 
   const { data: cardCountData, isLoading: isLoadingCount } =
     api.quiz.getCardCountForFormat.useQuery(
       { formatId: selectedFormat },
-      { enabled: !!selectedFormat },
+      {
+        enabled: !!selectedFormat,
+        staleTime: 1000 * 60 * 5, // 5 minutes - card counts don't change often
+        gcTime: 1000 * 60 * 30, // 30 minutes
+      },
     );
 
   const createQuizMutation = api.quiz.createQuiz.useMutation({

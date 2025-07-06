@@ -14,6 +14,7 @@ import {
   type QuizFormat,
 } from '@/lib/quiz-formats';
 import { getRandomOffset } from '@/lib/seeded-random';
+import { serverCache } from '@/lib/server-cache';
 
 export const quizRouter = createTRPCRouter({
   createQuiz: protectedProcedure
@@ -299,6 +300,16 @@ export const quizRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const cacheKey = `card-count-${input.formatId}`;
+
+      // Try to get from cache first
+      const cached = serverCache.get<{ count: number; format: unknown }>(
+        cacheKey,
+      );
+      if (cached) {
+        return cached;
+      }
+
       const format = getFormatById(input.formatId);
 
       if (!validateFormat(format)) {
@@ -313,14 +324,58 @@ export const quizRouter = createTRPCRouter({
         where: whereClause,
       });
 
-      return {
+      const result = {
         count,
         format: formatToSummary(format),
       };
+
+      // Cache for 5 minutes
+      serverCache.set(cacheKey, result, 5 * 60 * 1000);
+
+      return result;
     }),
 
   getAllQuizFormats: publicProcedure.query(() => {
     return getAllActiveFormats().map(formatToSummary);
+  }),
+
+  getAllQuizFormatsWithCounts: publicProcedure.query(async ({ ctx }) => {
+    const cacheKey = 'all-quiz-formats-with-counts';
+
+    // Try to get from cache first
+    const cached = serverCache.get<
+      Array<{
+        id: string;
+        name: string;
+        description: string;
+        isActive: boolean;
+        cardCount: number;
+      }>
+    >(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const formats = getAllActiveFormats();
+
+    // Get card counts for all formats in parallel
+    const formatsWithCounts = await Promise.all(
+      formats.map(async (format) => {
+        if (!validateFormat(format)) {
+          return { ...formatToSummary(format), cardCount: 0 };
+        }
+
+        const whereClause = buildFormatWhereClause(format);
+        const count = await ctx.db.card.count({ where: whereClause });
+
+        return { ...formatToSummary(format), cardCount: count };
+      }),
+    );
+
+    // Cache for 5 minutes
+    serverCache.set(cacheKey, formatsWithCounts, 5 * 60 * 1000);
+
+    return formatsWithCounts;
   }),
 
   searchCards: publicProcedure
