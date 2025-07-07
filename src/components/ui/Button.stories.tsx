@@ -8,7 +8,8 @@ const meta: Meta<typeof Button> = {
     layout: 'centered',
     docs: {
       description: {
-        component: 'A reusable button component with multiple variants and sizes.',
+        component:
+          'A reusable button component with multiple variants and sizes.',
       },
     },
   },

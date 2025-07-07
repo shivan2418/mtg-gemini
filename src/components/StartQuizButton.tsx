@@ -33,7 +33,7 @@ export function StartQuizButton() {
       onClick={handleStartQuiz}
       variant="primary"
       size="lg"
-      className="mt-8 border-mtg-gold-dark border-2 px-8 py-4 text-xl hover:shadow-xl"
+      className="border-mtg-gold-dark mt-8 border-2 px-8 py-4 text-xl hover:shadow-xl"
     >
       Start Quiz
     </Button>

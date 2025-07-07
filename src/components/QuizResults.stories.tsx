@@ -8,7 +8,8 @@ const meta: Meta<typeof QuizResults> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Quiz results page showing user performance with animated card reveals.',
+        component:
+          'Quiz results page showing user performance with animated card reveals.',
       },
     },
   },
@@ -63,7 +64,8 @@ export const MockedResults: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'This would show actual results if connected to a mocked tRPC provider.',
+        story:
+          'This would show actual results if connected to a mocked tRPC provider.',
       },
     },
   },
