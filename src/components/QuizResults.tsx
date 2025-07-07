@@ -4,6 +4,7 @@ import { api } from '@/trpc/react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Button } from './ui/Button';
 
 interface QuizResultsProps {
   quizId: string;
@@ -174,12 +175,14 @@ export function QuizResults({ quizId }: QuizResultsProps) {
               {((score / totalQuestions) * 100).toFixed(1)}% Accuracy
             </div>
 
-            <button
+            <Button
               onClick={handleGoHome}
-              className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold rounded-lg bg-gradient-to-r px-8 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105"
+              variant="primary"
+              size="lg"
+              className="px-8"
             >
               Take Another Quiz
-            </button>
+            </Button>
           </div>
         )}
       </div>

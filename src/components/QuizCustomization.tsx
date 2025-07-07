@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { env } from '@/env';
+import { Button } from './ui/Button';
 
 interface QuizCustomizationProps {
   onBack: () => void;
@@ -50,12 +51,14 @@ export function QuizCustomization({ onBack }: QuizCustomizationProps) {
   return (
     <div className="bg-mtg-black border-mtg-gold rounded-lg border-2 p-8 shadow-xl">
       <div className="mb-6">
-        <button
+        <Button
           onClick={onBack}
-          className="text-mtg-gold hover:text-mtg-gold-light mb-4 flex items-center text-sm transition-colors"
+          variant="ghost"
+          size="sm"
+          className="mb-4 flex items-center"
         >
           ← Back
-        </button>
+        </Button>
         <h2 className="text-mtg-gold mb-2 text-2xl font-bold">
           Choose Quiz Format
         </h2>

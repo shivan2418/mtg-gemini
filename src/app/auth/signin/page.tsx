@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -65,12 +66,13 @@ export default function SignInPage() {
             />
           </div>
           <div className="flex items-center justify-between">
-            <button
-              className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+            <Button
               type="submit"
+              variant="primary"
+              className="bg-blue-500 hover:bg-blue-700"
             >
               Sign In
-            </button>
+            </Button>
           </div>
         </form>
       </div>

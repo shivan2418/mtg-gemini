@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import type { RouterOutputs } from '@/trpc/react';
 import { useCardSearch } from '@/hooks/useCardSearch';
+import { Button } from './ui/Button';
 
 interface QuizGameProps {
   quizId: string;
@@ -240,15 +241,17 @@ export function QuizGame({ quizId }: QuizGameProps) {
                   )}
               </div>
             </div>
-            <button
+            <Button
               onClick={handleSubmitAnswer}
               disabled={!inputValue.trim() || submitAnswerMutation.isPending}
-              className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold w-full rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+              variant="primary"
+              size="lg"
+              className="w-full"
             >
               {submitAnswerMutation.isPending
                 ? 'Submitting...'
                 : 'Submit Answer'}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-4 text-center">
@@ -269,12 +272,13 @@ export function QuizGame({ quizId }: QuizGameProps) {
               Your answer:{' '}
               <span className="font-semibold">{inputValue || 'No answer'}</span>
             </div>
-            <button
+            <Button
               onClick={handleNextCard}
-              className="text-mtg-black from-mtg-gold to-mtg-gold-light hover:from-mtg-gold-light hover:to-mtg-gold rounded-lg bg-gradient-to-r px-6 py-3 text-lg font-bold shadow-lg transition-all duration-300 hover:scale-105"
+              variant="primary"
+              size="lg"
             >
               {currentCardIndex + 1 >= totalCards ? 'Finish Quiz' : 'Next Card'}
-            </button>
+            </Button>
           </div>
         )}
       </div>

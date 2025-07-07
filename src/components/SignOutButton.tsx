@@ -1,6 +1,7 @@
 'use client';
 
 import { signOut } from 'next-auth/react';
+import { Button } from './ui/Button';
 
 export function SignOutButton() {
   const handleSignOut = async () => {
@@ -8,11 +9,13 @@ export function SignOutButton() {
   };
 
   return (
-    <button
+    <Button
       onClick={handleSignOut}
-      className="text-mtg-gray hover:text-mtg-white border-mtg-gray hover:border-mtg-white rounded-lg border px-4 py-2 text-sm transition-all duration-200"
+      variant="ghost"
+      size="sm"
+      className="border-mtg-gray hover:border-mtg-white border"
     >
       Sign Out
-    </button>
+    </Button>
   );
 }
