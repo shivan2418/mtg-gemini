@@ -21,6 +21,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
   const [inputValue, setInputValue] = useState('');
   const [suggestion, setSuggestion] = useState('');
   const [showResult, setShowResult] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<{
     isCorrect: boolean;
     correctAnswer: string;
@@ -105,6 +106,10 @@ export function QuizGame({ quizId }: QuizGameProps) {
     });
   };
 
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
   const handleNextCard = () => {
     setShowResult(false);
     setInputValue('');
@@ -115,6 +120,8 @@ export function QuizGame({ quizId }: QuizGameProps) {
       // Quiz completed
       completeQuizMutation.mutate({ quizId: quiz!.id });
     } else {
+      // Set loading state and update card index
+      setImageLoading(true);
       setCurrentCardIndex(currentCardIndex + 1);
     }
   };
@@ -189,12 +196,20 @@ export function QuizGame({ quizId }: QuizGameProps) {
       <div className="mx-auto max-w-2xl">
         <div className="bg-mtg-dark border-mtg-gold mb-8 rounded-lg border-2 p-6">
           <div className="relative mx-auto h-96 w-full overflow-hidden rounded-lg">
+            {imageLoading && (
+              <div className="bg-mtg-dark absolute inset-0 z-10 flex items-center justify-center">
+                <div className="text-mtg-white text-lg">
+                  Loading new card...
+                </div>
+              </div>
+            )}
             <Image
               src={currentCard.artOnlyUri}
               alt="Magic card artwork"
               fill
               className="object-cover"
               unoptimized
+              onLoad={handleImageLoad}
             />
           </div>
         </div>
@@ -272,11 +287,7 @@ export function QuizGame({ quizId }: QuizGameProps) {
               Your answer:{' '}
               <span className="font-semibold">{inputValue || 'No answer'}</span>
             </div>
-            <Button
-              onClick={handleNextCard}
-              variant="primary"
-              size="lg"
-            >
+            <Button onClick={handleNextCard} variant="primary" size="lg">
               {currentCardIndex + 1 >= totalCards ? 'Finish Quiz' : 'Next Card'}
             </Button>
           </div>
