@@ -25,30 +25,141 @@ type Answer = QuizResultsOutput['quiz']['answers'][number];
 interface QuizResultsCardProps {
   delay: number;
   answer: Answer;
+  onScoreUpdate: () => void;
 }
 
-const QuizResultCard = ({ delay, answer }: QuizResultsCardProps) => {
+const QuizResultCard = ({
+  delay,
+  answer,
+  onScoreUpdate,
+}: QuizResultsCardProps) => {
   const [show, setShow] = useState(false);
   const [shrink, setShrink] = useState(false);
+
+  // Show the card after delay
   setTimeout(() => {
     setShow(true);
   }, delay);
 
+  const handleTransitionEnd = () => {
+    if (show && !shrink) {
+      setShrink(true);
+      // Update score when card transitions to shrunk state
+      if (answer.isCorrect) {
+        onScoreUpdate();
+      }
+    }
+  };
+
+  if (!show) {
+    return (
+      <div className="translate-y-4 opacity-0 transition-all duration-500" />
+    );
+  }
+
+  if (shrink) {
+    return (
+      <div className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 p-3 opacity-100 transition-all duration-500">
+        <div className="flex items-center justify-between">
+          <h3
+            className={classNames('text-lg font-bold', {
+              'text-green-400': answer.isCorrect,
+              'text-red-400': !answer.isCorrect,
+            })}
+          >
+            {answer.card.name}
+          </h3>
+          <div
+            className={classNames('text-xl font-bold', {
+              'text-green-400': answer.isCorrect,
+              'text-red-400': !answer.isCorrect,
+            })}
+          >
+            {answer.isCorrect ? '✓' : '✗'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      onTransitionEnd={() => setShrink(true)}
-      className={classNames('opacity-0 transition-all duration-500', {
-        'bg-red-500': shrink,
-        'opacity-100': show,
-      })}
+      onTransitionEnd={handleTransitionEnd}
+      className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 p-6 opacity-100 transition-all duration-500"
     >
-      {answer.id}
+      <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-3">
+        {/* Card Image */}
+        <div className="relative h-48 w-full overflow-hidden rounded-lg">
+          <Image
+            src={answer.card.artOnlyUri}
+            alt="Magic card artwork"
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        </div>
+
+        {/* Answer Comparison */}
+        <div className="space-y-4 md:col-span-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-mtg-white text-xl font-bold">
+              {answer.card.name}
+            </h3>
+            <div
+              className={classNames('text-2xl font-bold', {
+                'text-green-400': answer.isCorrect,
+                'text-red-400': !answer.isCorrect,
+              })}
+            >
+              {answer.isCorrect ? '✓' : '✗'}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-mtg-gray text-sm font-semibold">
+                Your Answer:
+              </span>
+              <span
+                className={classNames('font-medium', {
+                  'text-green-400': answer.isCorrect,
+                  'text-red-400': !answer.isCorrect,
+                })}
+              >
+                {answer.userAnswer}
+              </span>
+            </div>
+
+            {!answer.isCorrect && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-mtg-gray text-sm font-semibold">
+                  Correct Answer:
+                </span>
+                <span className="font-medium text-green-400">
+                  {answer.card.name}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="border-mtg-gray/30 flex items-center justify-between border-t pt-2">
+            <span className="text-mtg-gray text-sm">Points Earned:</span>
+            <span
+              className={classNames('text-lg font-bold', {
+                'text-green-400': answer.isCorrect,
+                'text-red-400': !answer.isCorrect,
+              })}
+            >
+              {answer.isCorrect ? '1' : '0'}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
 export function QuizResults({ quizId }: QuizResultsProps) {
-  const [numVisibleCards, setNumVisibleCards] = useState<number>(0);
   const [currentScore, setCurrentScore] = useState<number>(0);
   const [showFinalScore, setShowFinalScore] = useState(false);
   const router = useRouter();
@@ -57,11 +168,23 @@ export function QuizResults({ quizId }: QuizResultsProps) {
     quizId,
   });
 
-  const totalCardsInQuiz = results?.quiz.answers.length ?? 0;
+  const handleScoreUpdate = () => {
+    setCurrentScore((prev) => prev + 1);
+  };
 
   const handleGoHome = () => {
     router.push('/');
   };
+
+  // Show final score after all cards are processed
+  setTimeout(
+    () => {
+      if (results) {
+        setShowFinalScore(true);
+      }
+    },
+    (results?.quiz.answers.length ?? 0) * 1000 + 3000,
+  ); // All cards + 3 seconds
 
   if (isLoading) {
     return (
@@ -79,7 +202,7 @@ export function QuizResults({ quizId }: QuizResultsProps) {
     );
   }
 
-  const { quiz, score, totalQuestions } = results;
+  const { totalQuestions } = results;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -104,94 +227,9 @@ export function QuizResults({ quizId }: QuizResultsProps) {
             key={answer.id}
             delay={index * 1000}
             answer={answer}
+            onScoreUpdate={handleScoreUpdate}
           />
         ))}
-
-        {results.quiz.answers.map((answer, index) => {
-          return (
-            <div
-              key={answer.id}
-              className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 p-6 opacity-100 transition-all duration-500"
-              onTransitionStart={(event) => {
-                console.log(`Transition end of ${index}`);
-                if (answer.isCorrect) {
-                  setCurrentScore((prev) => prev + 1);
-                }
-              }}
-              style={{
-                transitionDelay: `${index * 1000}ms`,
-              }}
-            >
-              <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-3">
-                {/* Card Image */}
-                <div className="relative h-48 w-full overflow-hidden rounded-lg">
-                  <Image
-                    src={answer.card.artOnlyUri}
-                    alt="Magic card artwork"
-                    fill
-                    className={classNames('object-cover', { hidden: true })}
-                    unoptimized
-                  />
-                </div>
-
-                {/* Answer Comparison */}
-                <div className="space-y-4 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-mtg-white text-xl font-bold">
-                      {answer.card.name}
-                    </h3>
-                    <div
-                      className={`text-2xl font-bold ${
-                        answer.isCorrect ? 'text-green-400' : 'text-red-400'
-                      }`}
-                    >
-                      {answer.isCorrect ? '✓' : '✗'}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                      <span className="text-mtg-gray text-sm font-semibold">
-                        Your Answer:
-                      </span>
-                      <span
-                        className={`font-medium ${
-                          answer.isCorrect ? 'text-green-400' : 'text-red-400'
-                        }`}
-                      >
-                        {answer.userAnswer}
-                      </span>
-                    </div>
-
-                    {!answer.isCorrect && (
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-mtg-gray text-sm font-semibold">
-                          Correct Answer:
-                        </span>
-                        <span className="font-medium text-green-400">
-                          {answer.card.name}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="border-mtg-gray/30 flex items-center justify-between border-t pt-2">
-                    <span className="text-mtg-gray text-sm">
-                      Points Earned:
-                    </span>
-                    <span
-                      className={`text-lg font-bold ${
-                        answer.isCorrect ? 'text-green-400' : 'text-red-400'
-                      }`}
-                    >
-                      {answer.isCorrect ? '1' : '0'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
 
         {showFinalScore && (
           <div className="bg-mtg-dark border-mtg-gold animate-fadeIn mt-8 rounded-lg border-2 p-8 text-center">

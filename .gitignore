@@ -49,3 +49,5 @@ yarn-error.log*
 
 # Generated files
 public/card-names.json
+*storybook.log
+storybook-static
