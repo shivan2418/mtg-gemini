@@ -14,7 +14,8 @@ const QuizResultsMock = ({ quizId }: { quizId: string }) => {
           card: {
             id: '1',
             name: 'Lightning Bolt',
-            artOnlyUri: 'https://cards.scryfall.io/art_crop/front/f/2/f29ba16f-c8fb-42fe-aabf-87089cb214a7.jpg',
+            artOnlyUri:
+              'https://cards.scryfall.io/art_crop/front/f/2/f29ba16f-c8fb-42fe-aabf-87089cb214a7.jpg',
           },
         },
         {
@@ -24,7 +25,8 @@ const QuizResultsMock = ({ quizId }: { quizId: string }) => {
           card: {
             id: '2',
             name: 'Blue Lotus',
-            artOnlyUri: 'https://cards.scryfall.io/art_crop/front/b/d/bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd.jpg',
+            artOnlyUri:
+              'https://cards.scryfall.io/art_crop/front/b/d/bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd.jpg',
           },
         },
         {
@@ -34,7 +36,8 @@ const QuizResultsMock = ({ quizId }: { quizId: string }) => {
           card: {
             id: '3',
             name: 'Counterspell',
-            artOnlyUri: 'https://cards.scryfall.io/art_crop/front/1/9/1920dae4-fb92-4f19-ae4b-eb3276b8dac7.jpg',
+            artOnlyUri:
+              'https://cards.scryfall.io/art_crop/front/1/9/1920dae4-fb92-4f19-ae4b-eb3276b8dac7.jpg',
           },
         },
       ],
@@ -56,7 +59,9 @@ const QuizResultsMock = ({ quizId }: { quizId: string }) => {
         <div className="bg-mtg-dark mt-4 h-2 w-full rounded-full">
           <div
             className="from-mtg-gold to-mtg-gold-light h-2 rounded-full bg-gradient-to-r transition-all duration-500"
-            style={{ width: `${(currentScore / mockResults.totalQuestions) * 100}%` }}
+            style={{
+              width: `${(currentScore / mockResults.totalQuestions) * 100}%`,
+            }}
           />
         </div>
       </div>
@@ -96,9 +101,10 @@ const QuizResultsMock = ({ quizId }: { quizId: string }) => {
             <span className="text-mtg-white">{mockResults.totalQuestions}</span>
           </div>
           <div className="text-mtg-gray mb-6 text-xl">
-            {((currentScore / mockResults.totalQuestions) * 100).toFixed(1)}% Accuracy
+            {((currentScore / mockResults.totalQuestions) * 100).toFixed(1)}%
+            Accuracy
           </div>
-          <button className="bg-mtg-gold hover:bg-mtg-gold-light text-mtg-dark px-8 py-3 rounded font-semibold transition-colors">
+          <button className="bg-mtg-gold hover:bg-mtg-gold-light text-mtg-dark rounded px-8 py-3 font-semibold transition-colors">
             Take Another Quiz
           </button>
         </div>
@@ -138,7 +144,8 @@ export const MockedResults: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Shows the quiz results layout with mocked data to demonstrate the visual design.',
+        story:
+          'Shows the quiz results layout with mocked data to demonstrate the visual design.',
       },
     },
   },

@@ -32,7 +32,8 @@ export const RouterHookTest: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Tests if the useRouter hook can be called without error in Storybook.',
+        story:
+          'Tests if the useRouter hook can be called without error in Storybook.',
       },
     },
   },
