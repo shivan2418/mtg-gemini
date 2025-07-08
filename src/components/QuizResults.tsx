@@ -62,7 +62,7 @@ export function QuizResults({ answers }: QuizResultsProps) {
         if (answer.isCorrect) {
           handleScoreUpdate();
         }
-      }, delay + 500); // Wait 500ms for the show animation to complete
+      }, delay + 1000); // Wait 1000ms for the show animation to complete
       timers.push(shrinkTimer);
     });
 

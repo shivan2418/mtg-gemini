@@ -27,7 +27,7 @@ export const QuizResultCard = ({
 }: QuizResultCardProps) => {
   if (!show) {
     return (
-      <div className="translate-y-4 opacity-0 transition-all duration-500" />
+      <div className="-translate-x-full opacity-0 transition-all duration-500" />
     );
   }
 
@@ -57,7 +57,7 @@ export const QuizResultCard = ({
   }
 
   return (
-    <div className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 p-6 opacity-100 transition-all duration-500">
+    <div className="bg-mtg-dark border-mtg-gold translate-x-0 rounded-lg border-2 p-6 opacity-100 transition-all duration-500">
       <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-3">
         {/* Card Image */}
         <div className="relative h-48 w-full overflow-hidden rounded-lg">
@@ -65,7 +65,7 @@ export const QuizResultCard = ({
             src={answer.card.fullCardUri}
             alt="Magic card"
             fill
-            className="object-cover"
+            className="object-contain"
             unoptimized
           />
         </div>
