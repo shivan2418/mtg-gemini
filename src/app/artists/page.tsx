@@ -73,7 +73,7 @@ function ArtistCard({ name, oldestCardDate, cardCount }: ArtistCardProps) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {allCards.map((card: ArtistCard) => (
                   <div
-                    key={card.id}
+                    key={`${card.id}${card.artOnlyUri}`}
                     className="rounded-lg border border-amber-300 bg-white p-3 transition-colors hover:bg-amber-50"
                   >
                     <div className="flex items-start space-x-3">
@@ -138,39 +138,6 @@ export default function ArtistsPage() {
     (artist: Artist, index: number, self: Artist[]) =>
       self.findIndex((a) => a.name === artist.name) === index,
   );
-
-  // Debug logging for duplicates
-  if (allArtists.length !== uniqueArtists.length) {
-    console.log('🔍 CLIENT-SIDE DUPLICATE ARTISTS FOUND:');
-    console.log('Original count:', allArtists.length);
-    console.log('After deduplication:', uniqueArtists.length);
-
-    // Find and log the duplicates
-    const seen = new Set<string>();
-    const duplicates: string[] = [];
-    for (const artist of allArtists) {
-      if (seen.has(artist.name)) {
-        duplicates.push(artist.name);
-      } else {
-        seen.add(artist.name);
-      }
-    }
-    console.log('Duplicate artist names:', [...new Set(duplicates)]);
-  }
-
-  // Special debug logging for Rob Alexander
-  const robAlexanderEntries = uniqueArtists.filter((artist) =>
-    artist.name.toLowerCase().includes('rob alexander'),
-  );
-  if (robAlexanderEntries.length > 0) {
-    console.log('🎯 CLIENT-SIDE ROB ALEXANDER DEBUG:');
-    console.log('Found Rob Alexander entries:', robAlexanderEntries.length);
-    robAlexanderEntries.forEach((artist, index) => {
-      console.log(
-        `  ${index + 1}. "${artist.name}" - ${artist.cardCount} cards - oldest: ${new Date(artist.oldestCardDate).toLocaleDateString()}`,
-      );
-    });
-  }
 
   // Intersection Observer for infinite scroll
   useEffect(() => {

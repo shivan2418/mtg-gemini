@@ -57,21 +57,6 @@ export const artistsRouter = createTRPCRouter({
           cardCount: artist._count.artist,
         }));
 
-      // Debug logging for Rob Alexander
-      const robAlexanderEntries = filteredArtists.filter((artist) =>
-        artist.name.toLowerCase().includes('rob alexander'),
-      );
-      if (robAlexanderEntries.length > 0) {
-        console.log('🎯 SERVER-SIDE ROB ALEXANDER DEBUG:');
-        console.log(`Page request - offset: ${offset}, limit: ${limit}`);
-        console.log('Found Rob Alexander entries:', robAlexanderEntries.length);
-        robAlexanderEntries.forEach((artist, index) => {
-          console.log(
-            `  ${index + 1}. "${artist.name}" - ${artist.cardCount} cards - oldest: ${artist.oldestCardDate.toISOString()}`,
-          );
-        });
-      }
-
       return {
         artists: filteredArtists,
         nextCursor,
