@@ -33,23 +33,37 @@ export const QuizResultCard = ({
 
   if (shrink) {
     return (
-      <div className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 p-3 opacity-100 transition-all duration-500">
-        <div className="flex items-center justify-between">
-          <h3
-            className={classNames('text-lg font-bold', {
-              'text-green-400': answer.isCorrect,
-              'text-red-400': !answer.isCorrect,
-            })}
-          >
-            {answer.card.name}
-          </h3>
-          <div
-            className={classNames('text-xl font-bold', {
-              'text-green-400': answer.isCorrect,
-              'text-red-400': !answer.isCorrect,
-            })}
-          >
-            {answer.isCorrect ? '✓' : '✗'}
+      <div className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 px-2 opacity-100 transition-all duration-500">
+        <div className="grid grid-cols-1 items-center gap-3 md:grid-cols-3">
+          {/* Card Image - shrinking */}
+          <div className="relative h-8 w-full overflow-hidden rounded-lg transition-all duration-700 ease-in-out md:h-10">
+            <Image
+              src={answer.card.fullCardUri}
+              alt="Magic card"
+              fill
+              className="scale-50 object-contain opacity-30 transition-all duration-700 ease-in-out"
+              unoptimized
+            />
+          </div>
+
+          {/* Compact Answer Section */}
+          <div className="flex items-center justify-between md:col-span-2">
+            <h3
+              className={classNames('text-lg font-bold', {
+                'text-green-400': answer.isCorrect,
+                'text-red-400': !answer.isCorrect,
+              })}
+            >
+              {answer.card.name}
+            </h3>
+            <div
+              className={classNames('text-xl font-bold', {
+                'text-green-400': answer.isCorrect,
+                'text-red-400': !answer.isCorrect,
+              })}
+            >
+              {answer.isCorrect ? '✓' : '✗'}
+            </div>
           </div>
         </div>
       </div>
