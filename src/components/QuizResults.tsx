@@ -1,17 +1,13 @@
 'use client';
 
 import { api } from '@/trpc/react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/Button';
 import classNames from 'classnames';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '@/server/api/root';
-
-interface QuizResultsProps {
-  quizId: string;
-}
 
 // Infer the output type of the entire router
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -21,6 +17,10 @@ type QuizResultsOutput = RouterOutput['quiz']['getQuizResults'];
 
 // Define the Answer type for individual answers
 type Answer = QuizResultsOutput['quiz']['answers'][number];
+
+interface QuizResultsProps {
+  answers: Answer[];
+}
 
 interface QuizResultsCardProps {
   delay: number;
@@ -36,20 +36,29 @@ const QuizResultCard = ({
   const [show, setShow] = useState(false);
   const [shrink, setShrink] = useState(false);
 
-  // Show the card after delay
-  setTimeout(() => {
-    setShow(true);
-  }, delay);
+  // Show the card after delay using useEffect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShow(true);
+    }, delay);
 
-  const handleTransitionEnd = () => {
-    if (show && !shrink) {
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  // Handle shrinking and score update using useEffect, not transition events
+  useEffect(() => {
+    if (!show) return;
+
+    const shrinkTimer = setTimeout(() => {
       setShrink(true);
       // Update score when card transitions to shrunk state
       if (answer.isCorrect) {
         onScoreUpdate();
       }
-    }
-  };
+    }, 500); // Wait 500ms for the show animation to complete
+
+    return () => clearTimeout(shrinkTimer);
+  }, [show, answer.isCorrect, onScoreUpdate]);
 
   if (!show) {
     return (
@@ -83,10 +92,7 @@ const QuizResultCard = ({
   }
 
   return (
-    <div
-      onTransitionEnd={handleTransitionEnd}
-      className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 p-6 opacity-100 transition-all duration-500"
-    >
+    <div className="bg-mtg-dark border-mtg-gold translate-y-0 rounded-lg border-2 p-6 opacity-100 transition-all duration-500">
       <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-3">
         {/* Card Image */}
         <div className="relative h-48 w-full overflow-hidden rounded-lg">
@@ -159,50 +165,31 @@ const QuizResultCard = ({
   );
 };
 
-export function QuizResults({ quizId }: QuizResultsProps) {
+export function QuizResults({ answers }: QuizResultsProps) {
   const [currentScore, setCurrentScore] = useState<number>(0);
   const [showFinalScore, setShowFinalScore] = useState(false);
   const router = useRouter();
 
-  const { data: results, isLoading } = api.quiz.getQuizResults.useQuery({
-    quizId,
-  });
+  const TOTAL_ANIMATION_DURATION = 5000;
+  const totalQuestions = answers.length;
+  const perCardAnimation = TOTAL_ANIMATION_DURATION / answers.length;
 
-  const handleScoreUpdate = () => {
+  const handleScoreUpdate = useCallback(() => {
     setCurrentScore((prev) => prev + 1);
-  };
+  }, []);
 
-  const handleGoHome = () => {
+  // Show final score after all cards have been processed
+  useEffect(() => {
+    const finalScoreTimer = setTimeout(() => {
+      setShowFinalScore(true);
+    }, TOTAL_ANIMATION_DURATION + 1000); // Wait for all animations plus 1 second
+
+    return () => clearTimeout(finalScoreTimer);
+  }, []);
+
+  const handleGoHome = useCallback(() => {
     router.push('/');
-  };
-
-  // Show final score after all cards are processed
-  setTimeout(
-    () => {
-      if (results) {
-        setShowFinalScore(true);
-      }
-    },
-    (results?.quiz.answers.length ?? 0) * 1000 + 3000,
-  ); // All cards + 3 seconds
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-2xl">Loading quiz results...</div>
-      </div>
-    );
-  }
-
-  if (!results) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-2xl">Quiz results not found</div>
-      </div>
-    );
-  }
-
-  const { totalQuestions } = results;
+  }, [router]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -222,7 +209,7 @@ export function QuizResults({ quizId }: QuizResultsProps) {
       </div>
 
       <div className="mx-auto max-w-4xl space-y-6">
-        {results.quiz.answers.map((answer, index) => (
+        {answers.map((answer, index) => (
           <QuizResultCard
             key={answer.id}
             delay={index * 1000}
