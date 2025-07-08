@@ -22,43 +22,12 @@ interface QuizResultsProps {
 }
 
 interface QuizResultsCardProps {
-  delay: number;
   answer: Answer;
-  onScoreUpdate: () => void;
+  show: boolean;
+  shrink: boolean;
 }
 
-const QuizResultCard = ({
-  delay,
-  answer,
-  onScoreUpdate,
-}: QuizResultsCardProps) => {
-  const [show, setShow] = useState(false);
-  const [shrink, setShrink] = useState(false);
-
-  // Show the card after delay using useEffect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShow(true);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  // Handle shrinking and score update using useEffect, not transition events
-  useEffect(() => {
-    if (!show) return;
-
-    const shrinkTimer = setTimeout(() => {
-      setShrink(true);
-      // Update score when card transitions to shrunk state
-      if (answer.isCorrect) {
-        onScoreUpdate();
-      }
-    }, 500); // Wait 500ms for the show animation to complete
-
-    return () => clearTimeout(shrinkTimer);
-  }, [show, answer.isCorrect, onScoreUpdate]);
-
+const QuizResultCard = ({ answer, show, shrink }: QuizResultsCardProps) => {
   if (!show) {
     return (
       <div className="translate-y-4 opacity-0 transition-all duration-500" />
@@ -167,6 +136,9 @@ const QuizResultCard = ({
 export function QuizResults({ answers }: QuizResultsProps) {
   const [currentScore, setCurrentScore] = useState<number>(0);
   const [showFinalScore, setShowFinalScore] = useState(false);
+  const [cardStates, setCardStates] = useState<
+    Record<string, { show: boolean; shrink: boolean }>
+  >({});
   const router = useRouter();
 
   const TOTAL_ANIMATION_DURATION = 5000;
@@ -175,6 +147,42 @@ export function QuizResults({ answers }: QuizResultsProps) {
   const handleScoreUpdate = useCallback(() => {
     setCurrentScore((prev) => prev + 1);
   }, []);
+
+  // Handle all card timing logic
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+
+    answers.forEach((answer, index) => {
+      const delay = index * 1000;
+
+      // Show card after delay
+      const showTimer = setTimeout(() => {
+        setCardStates((prev) => ({
+          ...prev,
+          [answer.id]: { show: true, shrink: false },
+        }));
+      }, delay);
+      timers.push(showTimer);
+
+      // Shrink card and update score after show animation completes
+      const shrinkTimer = setTimeout(() => {
+        setCardStates((prev) => ({
+          ...prev,
+          [answer.id]: { show: true, shrink: true },
+        }));
+
+        // Update score when card transitions to shrunk state
+        if (answer.isCorrect) {
+          handleScoreUpdate();
+        }
+      }, delay + 500); // Wait 500ms for the show animation to complete
+      timers.push(shrinkTimer);
+    });
+
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [answers, handleScoreUpdate]);
 
   // Show final score after all cards have been processed
   useEffect(() => {
@@ -207,12 +215,12 @@ export function QuizResults({ answers }: QuizResultsProps) {
       </div>
 
       <div className="mx-auto max-w-4xl space-y-6">
-        {answers.map((answer, index) => (
+        {answers.map((answer) => (
           <QuizResultCard
             key={answer.id}
-            delay={index * 1000}
             answer={answer}
-            onScoreUpdate={handleScoreUpdate}
+            show={cardStates[answer.id]?.show ?? false}
+            shrink={cardStates[answer.id]?.shrink ?? false}
           />
         ))}
 
