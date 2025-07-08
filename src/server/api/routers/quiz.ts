@@ -268,6 +268,7 @@ export const quizRouter = createTRPCRouter({
                   id: true,
                   name: true,
                   artOnlyUri: true,
+                  fullCardUri: true,
                 },
               },
             },

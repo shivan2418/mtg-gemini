@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@/trpc/react';
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -97,8 +96,8 @@ const QuizResultCard = ({
         {/* Card Image */}
         <div className="relative h-48 w-full overflow-hidden rounded-lg">
           <Image
-            src={answer.card.artOnlyUri}
-            alt="Magic card artwork"
+            src={answer.card.fullCardUri}
+            alt="Magic card"
             fill
             className="object-cover"
             unoptimized
@@ -172,7 +171,6 @@ export function QuizResults({ answers }: QuizResultsProps) {
 
   const TOTAL_ANIMATION_DURATION = 5000;
   const totalQuestions = answers.length;
-  const perCardAnimation = TOTAL_ANIMATION_DURATION / answers.length;
 
   const handleScoreUpdate = useCallback(() => {
     setCurrentScore((prev) => prev + 1);
